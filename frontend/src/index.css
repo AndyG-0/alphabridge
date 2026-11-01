@@ -78,3 +78,23 @@ body {
   @apply bg-background text-foreground antialiased;
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* Chart tokens (dataviz palette slots 1-4 + chrome); validated for both surfaces. */
+:root {
+  --viz-1: #3987e5;
+  --viz-2: #d95926;
+  --viz-3: #199e70;
+  --viz-4: #c98500;
+  --viz-grid: #1e293b;
+  --viz-axis: #94a3b8;
+  --viz-surface: #0e1527;
+}
+:root[data-theme='light'] {
+  --viz-1: #2a78d6;
+  --viz-2: #eb6834;
+  --viz-3: #1baf7a;
+  --viz-4: #eda100;
+  --viz-grid: #e2e8f0;
+  --viz-axis: #475569;
+  --viz-surface: #ffffff;
+}

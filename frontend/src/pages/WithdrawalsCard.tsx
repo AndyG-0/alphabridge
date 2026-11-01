@@ -1,11 +1,17 @@
 import { useState } from 'react'
 import { api } from '../api/client'
+import BracketAcaVisualizer from '../components/charts/BracketAcaVisualizer'
+import WithdrawalStack from '../components/charts/WithdrawalStack'
 import { Badge, Card, Err, usd } from '../components/ui'
 import { useAsync } from '../hooks'
 
 export default function WithdrawalsCard() {
   const w = useAsync(api.withdrawals)
   const [pick, setPick] = useState<string | null>(null)
+  const [yearPick, setYearPick] = useState<number | null>(null)
+  const shownYears = w.data?.strategies.find((s) => s.strategy === (pick ?? w.data?.best))?.years
+  const yr = shownYears?.find((r) => r.year === yearPick) ?? shownYears?.[0]
+  const br = useAsync(() => (yr ? api.chartBrackets(yr.magi, yr.year) : Promise.resolve(null)), [yr?.magi, yr?.year])
   const d = w.data
   if (w.error) return <Err error={w.error} />
   if (!d) return null
@@ -47,6 +53,30 @@ export default function WithdrawalsCard() {
           </tbody>
         </table>
       </div>
+      {shown.years && (
+        <div className="mt-4 space-y-4">
+          <WithdrawalStack years={shown.years} />
+          {yr && (
+            <div>
+              <label className="mb-2 block text-xs text-slate-400">
+                Tax brackets and ACA position for
+                <select
+                  className="ml-2 rounded-lg border border-input bg-background px-2 py-1"
+                  value={yr.year}
+                  onChange={(e) => setYearPick(Number(e.target.value))}
+                >
+                  {shown.years.map((r) => (
+                    <option key={r.year} value={r.year}>
+                      {r.year} (age {r.age})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <BracketAcaVisualizer brackets={br.data} aca={d.aca_schedule} loading={br.loading && !br.data} error={br.error} />
+            </div>
+          )}
+        </div>
+      )}
       {shown.years && (
         <div tabIndex={0} role="region" aria-label="Withdrawal schedule" className="mt-4 max-h-80 overflow-auto">
           <table className="w-full text-xs">

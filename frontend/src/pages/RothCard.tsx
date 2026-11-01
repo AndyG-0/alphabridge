@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api/client'
-import { Badge, Bar, Card, Err, usd } from '../components/ui'
+import StackedYears from '../components/charts/StackedYears'
+import { Badge, Card, Err, usd } from '../components/ui'
 import { useAsync } from '../hooks'
 
 export default function RothCard() {
@@ -10,7 +11,7 @@ export default function RothCard() {
   if (r.error) return <Err error={r.error} />
   if (!d) return null
   const shown = d.plans.find((p) => p.strategy === (pick ?? d.best)) ?? d.plans.find((p) => p.total_converted > 0)
-  const max = Math.max(...(shown?.years ?? []).map((y) => y.conversion), 1)
+  const conversions = (shown?.years ?? []).filter((y) => y.conversion > 1)
   return (
     <Card title="Roth conversion ladder">
       <p className="mb-3 text-sm text-slate-400">
@@ -55,12 +56,24 @@ export default function RothCard() {
         </table>
       </div>
       {shown && shown.total_converted > 0 && (
+        <div className="mt-3">
+          <StackedYears
+            title="Roth conversions by year"
+            rows={conversions as unknown as Record<string, number>[]}
+            series={[
+              { key: 'conversion', label: 'Converted to Roth' },
+              { key: 'conversion_tax', label: 'Extra tax' },
+            ]}
+          />
+        </div>
+      )}
+      {shown && shown.total_converted > 0 && (
         <div tabIndex={0} role="region" aria-label="Roth ladder by year" className="mt-3 max-h-64 overflow-auto text-sm">
           <table className="w-full">
             <thead className="text-left text-slate-400">
               <tr>
                 <th>Age</th>
-                <th className="w-1/2">Conversion</th>
+                <th className="text-right">Conversion</th>
                 <th className="text-right">Extra tax</th>
                 <th className="text-right">Penalty-free from</th>
               </tr>
@@ -71,9 +84,7 @@ export default function RothCard() {
                 .map((y) => (
                   <tr key={y.year}>
                     <td>{y.age}</td>
-                    <td>
-                      <Bar value={(y.conversion / max) * 100} /> {usd(y.conversion)}
-                    </td>
+                    <td className="text-right">{usd(y.conversion)}</td>
                     <td className="text-right">{usd(y.conversion_tax)}</td>
                     <td className="text-right">{y.year + 5}</td>
                   </tr>

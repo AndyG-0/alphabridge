@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api/client'
+import ScenarioCompareChart from '../components/charts/ScenarioCompare'
 import { Card, Err, usd } from '../components/ui'
 import { useAsync } from '../hooks'
 
@@ -41,6 +42,7 @@ export default function ScenarioCard() {
         Compare and rank sensitivities
       </button>
       <Err error={cmp.error} />
+      {cmp.data && <ScenarioCompareChart data={cmp.data} />}
       {cmp.data && (
         <table className="mt-2 w-full text-sm">
           <thead className="text-left text-slate-400">

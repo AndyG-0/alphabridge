@@ -1,7 +1,8 @@
 import { Car, Gift, GraduationCap, Hammer, Home, Pencil, Plane, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Bar as RBar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import FanChart from '../components/charts/FanChart'
+import { Bar as RBar, BarChart, CartesianGrid, Cell, Legend, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { api } from '../api/client'
 import RmdCard from './RmdCard'
 import SavingsCard from './SavingsCard'
@@ -504,35 +505,12 @@ function Phases({ phases, spouse, basis }: { phases: Phase[]; spouse?: string; b
 }
 
 function WealthPath({ f, spouse }: { f: Fire; spouse?: string }) {
-  const data = f.path.filter((_, i) => i % 1 === 0)
   return (
     <Card title="Typical savings over time (today's $)">
-      <div className="h-56">
-        <ResponsiveContainer>
-          <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid vertical={false} stroke="#1e293b" />
-            <XAxis dataKey="year" tick={{ fontSize: 11, fill: '#94a3b8' }} stroke={AXIS} tickLine={false} minTickGap={24} />
-            <YAxis
-              tickFormatter={(v) => (v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${+(v / 1000).toFixed(1)}k`)}
-              tick={{ fontSize: 11, fill: '#94a3b8' }}
-              width={52}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              contentStyle={tooltipStyle}
-              formatter={(v) => [usd(Number(v)), 'Median savings']}
-              labelFormatter={(_, pl) => {
-                const row = pl?.[0]?.payload as Fire['path'][number] | undefined
-                return row ? `${row.year} · ${agesText(row.ages, spouse)}` : ''
-              }}
-            />
-            <Line dataKey="value" stroke={SERIES.portfolio} strokeWidth={2} dot={false} activeDot={{ r: 4, stroke: SURFACE, strokeWidth: 2 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      <FanChart path={f.path} ageLabel={(row) => agesText(row.ages, spouse)} />
       <p className="mt-2 text-xs text-slate-400">
-        The middle outcome. In the worst 10% of markets you'd have {usd(f.p10_final_real)} at 95; in the best 10%, {usd(f.p90_final_real)}.
+        The line is the middle outcome; shading shows the middle half and the middle 80% of simulated markets. In the worst 10% of markets you'd have{' '}
+        {usd(f.p10_final_real)} at 95; in the best 10%, {usd(f.p90_final_real)}.
       </p>
     </Card>
   )

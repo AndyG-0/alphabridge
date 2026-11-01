@@ -248,6 +248,43 @@ export interface HealthYear {
   over_cliff: boolean
   cliff_magi: number | null
 }
+export interface FirePathPoint {
+  year: number
+  ages: Ages
+  value: number
+  p10: number
+  p25: number
+  p75: number
+  p90: number
+}
+export interface BracketFill {
+  year: number
+  status: string
+  magi: number
+  standard_deduction: number
+  taxable_income: number
+  tax: number
+  marginal_rate: number
+  bands: { from: number; to: number | null; rate: number; filled: number }[]
+  source_url: string | null
+  retrieved_on: string | null
+}
+export interface CashFlow {
+  year: number
+  gross_income: number
+  effective_tax_rate: number
+  nodes: string[]
+  links: { source: string; target: string; value: number }[]
+  shortfall: number
+  note: string
+}
+export interface AcaSchedule {
+  rules_year: number
+  enhanced: boolean
+  fpl: number
+  cliff_magi: number | null
+  points: { fpl_ratio: number; magi: number; net_premium: number; credit: number; medicaid: boolean }[]
+}
 export interface Fire {
   success_rate: number
   bridge_success_rate: number
@@ -264,7 +301,7 @@ export interface Fire {
   target_success_rate: number
   guardrail_cut_rate: number | null
   people: { key: 'SELF' | 'SPOUSE'; name: string; age_now: number; retire_age: number }[]
-  path: { year: number; ages: Ages; value: number }[]
+  path: FirePathPoint[]
   sustainable_spend_monthly?: number
   sustainable_spend_at_earliest_monthly?: number | null
   planned_spend_monthly?: number
@@ -490,6 +527,7 @@ export interface Withdrawals {
   aca_rules_year: number
   aca_enhanced: boolean
   starting_balances: { taxable: number; pretax: number; roth: number }
+  aca_schedule?: AcaSchedule
 }
 
 export interface RmdRow {
@@ -965,6 +1003,8 @@ export const api = {
   savings: () => req<SavingsPlan>('/planner/savings'),
   socialSecurity: () => req<SsGrid>('/planner/social-security'),
   withdrawals: () => req<Withdrawals>('/planner/withdrawals'),
+  chartBrackets: (magi: number, year?: number) => req<BracketFill>(`/charts/brackets?magi=${magi}${year ? `&year=${year}` : ''}`),
+  chartCashflow: () => req<CashFlow>('/charts/cashflow'),
   ingest: (file: File, accountId?: number, allowDuplicate = false, owner?: Owner) => {
     const fd = new FormData()
     fd.append('file', file)

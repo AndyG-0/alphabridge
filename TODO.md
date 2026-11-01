@@ -215,7 +215,7 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
   - *Acceptance:* resumable steps; data-completeness meter explaining which inputs improve accuracy; component + e2e tests.
   - *Touch:* `frontend/src/pages/`, `backend/routes/`
   - *Depends:* E5
-- [ ] **U3 Charts** — fan chart, tax/withdrawal stack, bracket and ACA-cliff visualizer, cash-flow Sankey, scenario compare.
+- [x] **U3 Charts** — fan chart, tax/withdrawal stack, bracket and ACA-cliff visualizer, cash-flow Sankey, scenario compare. (Done: `components/charts/` with a shared `ChartFrame` (loading, error, empty and NaN states, legend for 2+ series, "View as table" fallback) and FanChart, WithdrawalStack/StackedYears, BracketAcaVisualizer, CashFlowSankey, ScenarioCompare on `--viz-*` theme tokens (dataviz palette slots 1-4, validated in both modes); wired into the Plan savings card, Withdrawals and Roth cards (inline bars replaced), Scenario card and the Dashboard. All numbers come from Python: the Monte Carlo path now carries p10/p25/p75/p90 per year, new `GET /api/charts/brackets` and `/api/charts/cashflow` (+ `get_chart_data` chat tool). Left: older cards (net worth, stress, symbol detail) still use hard-coded hex.)
   - *Acceptance:* follows the `dataviz` skill; renders empty/NaN/loading states; light/dark; tested.
   - *Touch:* `frontend/src/components/charts/`
   - *Depends:* E4, P2

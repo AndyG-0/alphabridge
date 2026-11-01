@@ -302,7 +302,8 @@ def run_fire(profile, n_sims=5000, rule_of_55=False, seed=42, events=None, guard
     }
     this_year = date.today().year
     out["path"] = [
-        {"year": this_year + i, "ages": {p.key: round(p.age_now + i, 1) for p in ppl}, "value": v} for i, (_, v) in enumerate(sim["median_path_real"])
+        {"year": this_year + i, "ages": {p.key: round(p.age_now + i, 1) for p in ppl}, "value": v, **sim["path_bands_real"][i]}
+        for i, (_, v) in enumerate(sim["median_path_real"])
     ]
     if not detail:
         return out

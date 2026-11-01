@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { server } from '../test/setup'
 import Onboarding from './Onboarding'
 
@@ -43,6 +43,9 @@ function setup(current = 'household') {
 }
 
 describe('Onboarding', () => {
+  // let the follow-up reload requests settle before the jsdom environment is torn down
+  afterEach(() => new Promise((r) => setTimeout(r, 100)))
+
   it('resumes at the server-reported step and shows what missing data would improve', async () => {
     setup('goals')
     expect(await screen.findByRole('heading', { name: 'Goals' })).toBeInTheDocument()

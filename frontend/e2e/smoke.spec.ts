@@ -55,3 +55,11 @@ test('onboarding wizard is resumable and shows the completeness meter', async ({
   await page.reload()
   await expect(page.getByRole('heading', { name: 'Goals' })).toBeVisible()
 })
+
+test('plan page draws the fan chart with a table view', async ({ page }) => {
+  await page.goto('/plan')
+  const fig = page.getByRole('figure', { name: /Projected savings range/ })
+  await expect(fig).toBeVisible({ timeout: 30_000 })
+  await fig.getByText('View as table').click()
+  await expect(fig.getByRole('table')).toBeVisible()
+})

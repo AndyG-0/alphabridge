@@ -2,6 +2,7 @@ import { Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAx
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api, type Owner } from '../api/client'
+import CashFlowSankey from '../components/charts/CashFlowSankey'
 import CompletenessMeter from '../components/CompletenessMeter'
 import { Badge, Bar, Card, Err, Hint, pct, usd } from '../components/ui'
 import { useAsync } from '../hooks'
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const debt = useAsync(api.debt)
   const prof = useAsync(api.profile)
   const ob = useAsync(api.onboarding)
+  const flow = useAsync(api.chartCashflow)
   const spouse = prof.data?.spouse_age ? prof.data.spouse_name || 'Spouse' : undefined
   const ownerLabel: Record<Owner, string> = { SELF: 'Yours', SPOUSE: spouse ? `${spouse}'s` : "Spouse's", JOINT: 'Joint' }
   const byOwner = pf.data?.by_owner
@@ -86,6 +88,13 @@ export default function Dashboard() {
           </div>
         )}
         {pf.data && pf.data.accounts.length === 0 && <p className="mt-3 text-sm text-slate-400">No accounts yet — upload a statement in the Portfolio tab.</p>}
+      </Card>
+      <Card title="Where your income goes" className="md:col-span-2">
+        <CashFlowSankey data={flow.data} loading={flow.loading && !flow.data} error={flow.error} />
+        {flow.data && flow.data.shortfall > 0 && (
+          <p className="mt-2 text-xs text-amber-300">Spending, debt and savings exceed income by {usd(flow.data.shortfall)} a year.</p>
+        )}
+        {flow.data && <p className="mt-1 text-xs text-slate-500">{flow.data.note}</p>}
       </Card>
 
       <NetWorthCard />

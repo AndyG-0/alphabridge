@@ -25,6 +25,7 @@ from routes._helpers import get_profile
 from services import (
     cash_backtest,
     cash_plan,
+    chart_data,
     early_access,
     household,
     hsa,
@@ -323,6 +324,12 @@ TOOLS = [
         "get_spending_actuals",
         "Measured monthly spending from imported transactions vs the plan assumption: average, by category, lifestyle-creep flag, uncategorized count.",
         _obj({"months": {"type": "integer"}}),
+    ),
+    (
+        "get_chart_data",
+        "Numbers behind the charts: kind='brackets' (ordinary tax brackets filled by a MAGI, with marginal rate; optional magi, year) or "
+        "kind='cashflow' (this year's income split into taxes, spending, debt payments, savings and leftover).",
+        _obj({"kind": {"type": "string", "enum": ["brackets", "cashflow"]}, "magi": {"type": "number"}, "year": {"type": "integer"}}, ["kind"]),
     ),
     (
         "get_onboarding_status",
@@ -898,6 +905,15 @@ HANDLERS = {
     "get_ingestion_log": _ingest_log,
     "get_spending_actuals": lambda a: transactions.actuals(get_profile(), months=int(a.get("months") or 12)),
     "get_data_gaps": lambda a: _gaps(),
+    "get_chart_data": lambda a: (
+        chart_data.cash_flow(db.session(), get_profile())
+        if a.get("kind") == "cashflow"
+        else chart_data.bracket_fill(
+            float(a["magi"]) if a.get("magi") is not None else float(get_profile().annual_income or 0) + float(get_profile().spouse_annual_income or 0),
+            get_profile().tax_filing_status,
+            int(a["year"]) if a.get("year") else None,
+        )
+    ),
     "get_onboarding_status": lambda a: onboarding.status(db.session(), get_profile()),
     "get_screener_results": _screener,
     "get_sector_overview": lambda a: market_data.sector_strength(),
