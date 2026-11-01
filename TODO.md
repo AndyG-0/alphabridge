@@ -161,7 +161,7 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
   - *Acceptance:* lot ingestion (Fidelity lot export); wash-sale detection across taxable, IRA and spouse accounts; harvest candidates with estimated tax savings; 0% LTCG gain-harvesting hints; specific-lot sell suggestions.
   - *Touch:* `backend/models.py` (+ migration), `backend/services/ingestion.py`, `backend/services/tax_lots.py`
   - *Depends:* P1, D2
-- [ ] **I5 Risk analytics** — surface and test what `quant_engine` computes.
+- [x] **I5 Risk analytics** — surface and test what `quant_engine` computes. (Done: `services/risk.py` — annualized volatility, max drawdown, 1-day historical VaR/CVaR (fraction and dollars), beta vs SPY, correlation matrix, per-holding risk contribution (w·Σw / wᵀΣw, hedges can go negative), and stress tests of the actual holdings against 2000–02, 2008, 2022 and 1973–74 using `data/risk_scenarios.json` (Damodaran annual returns by stocks/bonds/bills, with sector and single-stock sensitivity multipliers); holdings with no price history use their proxy ticker or the class proxy and are listed in coverage; golden test in `tests/golden/risk_two_asset.json` computed independently with the stdlib; `GET /api/portfolio/risk`, `get_risk_report` chat tool, Risk card. Left: current weights are held constant over the price window, stress uses calendar-year returns (intra-year drawdowns were deeper), sensitivities are assumptions.)
   - *Acceptance:* volatility, max drawdown, VaR/CVaR, beta, correlation matrix, risk contribution, historical stress scenarios (2008, 2022, dot-com) on actual holdings; UI panel; golden tests.
   - *Touch:* `backend/services/quant_engine.py`, frontend
   - *Depends:* E7

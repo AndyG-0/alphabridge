@@ -16,6 +16,7 @@ import { useAsync } from '../hooks'
 import ImportHistoryCard from './ImportHistoryCard'
 import PerformanceCard from './PerformanceCard'
 import RebalanceCard from './RebalanceCard'
+import RiskCard from './RiskCard'
 import TaxLotsCard from './TaxLotsCard'
 import XRayCard from './XRayCard'
 
@@ -477,6 +478,7 @@ export default function PortfolioDropzone() {
   return (
     <div className="space-y-4">
       <PerformanceCard />
+      <RiskCard />
       <RebalanceCard />
       <TaxLotsCard />
       <XRayCard />

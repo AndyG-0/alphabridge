@@ -185,6 +185,7 @@ def test_every_read_route_family_has_a_chat_tool(client):
         "/api/networth/summary",
         "/api/performance",
         "/api/rebalance",
+        "/api/portfolio/risk",
         "/api/tax-lots",
         "/api/tax-lots/list",
         "/api/tax-lots/sell",

@@ -733,7 +733,35 @@ export type LotSale = {
   picks: { lot_id: number; acquired: string; term: string; shares: number; proceeds: number; gain: number; est_tax: number }[]
 }
 
+export type RiskReport = {
+  total: number
+  notes: string[]
+  coverage?: { priced_pct: number; unpriced: string[]; proxied: string[]; cash_pct: number }
+  risk?: {
+    days: number
+    volatility: number
+    max_drawdown: number
+    var_1d: number
+    cvar_1d: number
+    var_1d_dollars: number
+    cvar_1d_dollars: number
+    confidence: number
+    beta: number | null
+  }
+  contribution?: { symbol: string; weight: number; risk_share: number }[]
+  correlation?: Record<string, Record<string, number>>
+  stress: {
+    id: string
+    label: string
+    portfolio_change: number
+    portfolio_return: number
+    benchmark: { stocks: number; bonds: number; bills: number }
+    by_class: Record<string, { return: number; change: number }>
+  }[]
+}
+
 export const api = {
+  risk: () => req<RiskReport>('/portfolio/risk'),
   taxLots: () => req<TaxLotReport>('/tax-lots'),
   lotSale: (symbol: string, amount: number) => req<LotSale>(`/tax-lots/sell?symbol=${encodeURIComponent(symbol)}&amount=${amount}`),
   importLots: (file: File, accountId: number) => {

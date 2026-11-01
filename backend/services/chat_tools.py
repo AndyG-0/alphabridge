@@ -31,6 +31,7 @@ from services import (
     performance,
     planner,
     rebalance,
+    risk,
     rmd,
     roth,
     scenarios,
@@ -341,6 +342,12 @@ TOOLS = [
         "Drift from the target allocation, a self-funding trade list that respects 401(k) menus and minimizes realized gains in taxable, "
         "estimated tax on those gains, and asset-location suggestions (deterministic).",
         _obj({"threshold": {"type": "number"}}),
+    ),
+    (
+        "get_risk_report",
+        "Portfolio risk from price history at today's weights: volatility, max drawdown, 1-day VaR/CVaR, beta, correlations, "
+        "each position's share of risk, plus historical stress tests (2000-02, 2008, 2022, 1973-74) applied to actual holdings (deterministic).",
+        _obj({}),
     ),
     (
         "get_tax_lot_report",
@@ -852,6 +859,7 @@ HANDLERS = {
         db.session(), get_profile(), market_data.get_closes, market_data.get_fundamentals, assume_contributions=bool(a.get("assume_contributions"))
     ),
     "get_rebalance_plan": lambda a: rebalance.report(db.session(), get_profile(), float(a.get("threshold") or rebalance.DEFAULT_THRESHOLD)),
+    "get_risk_report": lambda a: risk.report(db.session(), market_data.get_closes),
     "get_tax_lot_report": lambda a: tax_lots.report(db.session(), get_profile()),
     "suggest_lot_sale": lambda a: _suggest_lot_sale(a),
     "grade_401k_menu": _menu,

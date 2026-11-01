@@ -9,7 +9,7 @@ from models import Account, AllowedPlanMenu, CashFlow, Holding, IngestionLog, Li
 from routes._helpers import get_profile
 from schemas import AccountIn, ConfirmedIngest, PlanMenuItemIn, ProfileIn, ProxyMapIn
 from security import safe_filename, validate_upload
-from services import corporate_actions, doc_reader, ingestion, institutions, market_data, networth, performance, rebalance, tax_lots, xray
+from services import corporate_actions, doc_reader, ingestion, institutions, market_data, networth, performance, rebalance, risk, tax_lots, xray
 
 bp = Blueprint("portfolio", __name__, url_prefix="/api")
 
@@ -440,6 +440,11 @@ def tax_lots_import():
     if not parsed.rows:
         return jsonify(error="No usable lots found.", row_errors=parsed.row_errors, warnings=parsed.warnings), 422
     return jsonify(ingestion.apply_lots(s, parsed, account_id)), 201
+
+
+@bp.get("/portfolio/risk")
+def portfolio_risk():
+    return jsonify(risk.report(db.session(), market_data.get_closes))
 
 
 @bp.get("/rebalance")
