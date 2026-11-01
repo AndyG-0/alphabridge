@@ -18,6 +18,8 @@ class ProfileIn(BaseModel):
     birth_date: date | None = None
     target_retirement_age: float | None = Field(None, ge=0, le=100)
     annual_income: float | None = Field(None, ge=0)
+    employer_match_rate: float | None = Field(None, ge=0, le=5)
+    employer_match_cap_pct: float | None = Field(None, ge=0, le=1)
     monthly_expenses_current: float | None = Field(None, ge=0)
     monthly_expenses_retirement: float | None = Field(None, ge=0)
     emergency_fund_target_months: float | None = Field(None, ge=0, le=60)

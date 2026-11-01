@@ -59,6 +59,8 @@ class UserProfile(Base):
     spending_model: Mapped[dict] = mapped_column(JSON, default=dict)  # services/spending.py SpendingModel; {} = flat spending
     target_allocation: Mapped[dict] = mapped_column(JSON, default=dict)  # {asset_class: weight} summing to 1; {} = none set (performance, rebalancing)
     dca_plan: Mapped[dict] = mapped_column(JSON, default=dict)  # {amount, tranches, schedule: [{on, amount}], notified: [on]}; {} = none
+    employer_match_rate: Mapped[float] = mapped_column(Float, default=0)  # employer 401(k) match per $1 deferred (0.5 = 50 cents)
+    employer_match_cap_pct: Mapped[float] = mapped_column(Float, default=0)  # match applies to deferrals up to this share of pay (0.06 = 6%)
     onboarding: Mapped[dict] = mapped_column(JSON, default=dict)  # services/onboarding.py wizard state: {step, skipped, completed, dismissed}
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
 
@@ -445,3 +447,19 @@ class ThesisRecord(Base):
     criteria_json: Mapped[list] = mapped_column(JSON, default=list)  # [{metric, op, value, text}]
     status: Mapped[str] = mapped_column(String(12), default="ACTIVE")  # ACTIVE | INVALIDATED | CLOSED
     invalidated_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+
+class ActionItem(Base):
+    """User state for one generated to-do. The items themselves are recomputed from live data (services/actions.py); this row records
+    what the user did with a key (snooze/done) and whether a notification already went out, so alerts never repeat."""
+
+    __tablename__ = "action_item"
+    __table_args__ = (UniqueConstraint("user_id", "key", name="uq_action_user_key"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=1)
+    key: Mapped[str] = mapped_column(String(120), index=True)  # e.g. "rebalance:2026-10"; the period suffix lets a done item come back later
+    kind: Mapped[str] = mapped_column(String(30), default="")
+    status: Mapped[str] = mapped_column(String(10), default="open")  # open | snoozed | done
+    snooze_until: Mapped[date | None] = mapped_column(Date, nullable=True)
+    notified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)

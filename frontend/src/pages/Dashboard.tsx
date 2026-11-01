@@ -2,6 +2,7 @@ import { Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAx
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api, type Owner } from '../api/client'
+import ActionFeed from '../components/ActionFeed'
 import CashFlowSankey from '../components/charts/CashFlowSankey'
 import CompletenessMeter from '../components/CompletenessMeter'
 import { Badge, Bar, Card, Err, Hint, pct, usd } from '../components/ui'
@@ -38,6 +39,9 @@ export default function Dashboard() {
           </Link>
         </Card>
       )}
+      <Card title="Next actions" className="md:col-span-2">
+        <ActionFeed limit={5} />
+      </Card>
       <Card title="Net worth & barbell split" className="md:col-span-2">
         <Err error={pf.error} />
         <div className="flex flex-wrap items-center gap-6">

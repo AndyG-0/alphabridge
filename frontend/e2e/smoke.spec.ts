@@ -9,6 +9,7 @@ const PAGES = [
   { name: 'Chat', path: '/chat' },
   { name: 'Settings', path: '/settings' },
   { name: 'Onboarding', path: '/onboarding' },
+  { name: 'Actions', path: '/actions' },
 ]
 
 for (const theme of ['dark', 'light']) {

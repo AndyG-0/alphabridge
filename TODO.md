@@ -219,7 +219,7 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
   - *Acceptance:* follows the `dataviz` skill; renders empty/NaN/loading states; light/dark; tested.
   - *Touch:* `frontend/src/components/charts/`
   - *Depends:* E4, P2
-- [ ] **U4 Action center** — prioritized to-do feed.
+- [x] **U4 Action center** — prioritized to-do feed. (Done: `services/actions.py` generators for employer-match capture (new `employer_match_rate`/`employer_match_cap_pct` profile fields, Settings inputs), best-plan Roth conversion, rebalance drift, tax-loss harvest, stale statements and a year-end checklist from versioned `data/action_rules.json`; Python priority score 0-100; `ActionItem` table (migration `a1c4e7f20b95`) holds snooze/done and notification dedupe, keys carry a period suffix so items can recur; `GET /api/actions`, `POST /api/actions/<key>/snooze|done|reopen`; daily `action_alerts` job sends new items at priority 70+ once through `notifier.notify` and retries if no channel is configured; `get_action_items` chat tool; Dashboard feed card and `/actions` page. Left: no nav tab for `/actions` (reached from the Dashboard card).)
   - *Acceptance:* items for match capture, conversion amount, rebalance, harvest, stale statement, year-end checklist; snooze/done; Discord/SMTP notification hooks.
   - *Touch:* `backend/services/actions.py`, `backend/services/notifier.py`, frontend
   - *Depends:* P3, I3, I4

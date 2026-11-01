@@ -23,6 +23,7 @@ from models import (
 )
 from routes._helpers import get_profile
 from services import (
+    actions,
     cash_backtest,
     cash_plan,
     chart_data,
@@ -324,6 +325,12 @@ TOOLS = [
         "get_spending_actuals",
         "Measured monthly spending from imported transactions vs the plan assumption: average, by category, lifestyle-creep flag, uncategorized count.",
         _obj({"months": {"type": "integer"}}),
+    ),
+    (
+        "get_action_items",
+        "The prioritized to-do feed (employer match, Roth conversion, rebalance, tax-loss harvest, stale statements, year-end checklist), "
+        "each with a 0-100 priority, dollar impact and where to act. Set include_hidden to also see snoozed and done items.",
+        _obj({"include_hidden": {"type": "boolean"}}),
     ),
     (
         "get_chart_data",
@@ -905,6 +912,7 @@ HANDLERS = {
     "get_ingestion_log": _ingest_log,
     "get_spending_actuals": lambda a: transactions.actuals(get_profile(), months=int(a.get("months") or 12)),
     "get_data_gaps": lambda a: _gaps(),
+    "get_action_items": lambda a: actions.feed(db.session(), get_profile(), include_hidden=bool(a.get("include_hidden"))),
     "get_chart_data": lambda a: (
         chart_data.cash_flow(db.session(), get_profile())
         if a.get("kind") == "cashflow"

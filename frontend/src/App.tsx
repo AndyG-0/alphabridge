@@ -5,6 +5,7 @@ import { api, setToken } from './api/client'
 import { Button, Input } from './components/ui'
 import { useAsync } from './hooks'
 import { useTheme } from './lib/theme'
+import Actions from './pages/Actions'
 import Chat from './pages/Chat'
 import Dashboard from './pages/Dashboard'
 import Onboarding from './pages/Onboarding'
@@ -99,6 +100,7 @@ export default function App() {
           {TABS.map(({ path, el }) => (
             <Route key={path} path={path === '/chat' ? '/chat/:sessionId?' : path} element={el} />
           ))}
+          <Route path="/actions" element={<Actions />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

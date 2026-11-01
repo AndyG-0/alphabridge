@@ -193,6 +193,8 @@ export interface Profile {
   ltc_years: number
   ltc_start_age: number
   guardrails_enabled: boolean
+  employer_match_rate: number
+  employer_match_cap_pct: number
 }
 export type Ages = { SELF: number; SPOUSE?: number }
 export interface Phase {
@@ -906,7 +908,28 @@ export type ThesisRow = {
   broken: Criterion[]
 }
 
+export interface ActionItem {
+  key: string
+  kind: string
+  title: string
+  detail: string
+  priority: number
+  where: string
+  dollars: number | null
+  status: 'open' | 'snoozed' | 'done'
+  snooze_until: string | null
+}
+export interface ActionFeed {
+  items: ActionItem[]
+  hidden: number
+  high_priority: number
+}
+
 export const api = {
+  actions: (all = false) => req<ActionFeed>(`/actions${all ? '?all=1' : ''}`),
+  actionSnooze: (key: string, days = 7) => req<{ ok: boolean }>(`/actions/${encodeURIComponent(key)}/snooze`, json('POST', { days })),
+  actionDone: (key: string) => req<{ ok: boolean }>(`/actions/${encodeURIComponent(key)}/done`, json('POST', {})),
+  actionReopen: (key: string) => req<{ ok: boolean }>(`/actions/${encodeURIComponent(key)}/reopen`, json('POST', {})),
   onboarding: () => req<Onboarding>('/onboarding'),
   saveOnboarding: (b: { step?: OnboardingStep['id']; skip?: OnboardingStep['id']; completed?: boolean; dismissed?: boolean }) =>
     req<Onboarding>('/onboarding', json('PUT', b)),
