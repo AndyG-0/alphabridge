@@ -9,6 +9,13 @@ from services import simplefin
 
 CLAIM = "https://bridge.example/simplefin/claim/TOK"
 ACCESS = "https://user:pw@bridge.example/simplefin"
+
+
+@pytest.fixture(autouse=True)
+def _bridge_host(monkeypatch):
+    monkeypatch.setenv("SIMPLEFIN_HOSTS", "bridge.example")
+
+
 TOKEN = base64.b64encode(CLAIM.encode()).decode()
 PAYLOAD = {
     "errors": [],
@@ -83,7 +90,18 @@ def test_scheduler_noop_when_disconnected(app):
 
 
 @pytest.mark.parametrize(
-    "host", ["http://bridge.example/c", "https://localhost/c", "https://127.0.0.1/c", "https://10.0.0.5/c", "https://intranet/c", "https://nas.local/c"]
+    "host",
+    [
+        "http://bridge.example/c",
+        "https://localhost/c",
+        "https://127.0.0.1/c",
+        "https://10.0.0.5/c",
+        "https://intranet/c",
+        "https://nas.local/c",
+        "https://evil.example/c",
+        "https://bridge.example:8443/c",
+        "https://u:p@bridge.example/c",
+    ],
 )
 def test_claim_rejects_internal_hosts(host):
     with pytest.raises(ValueError):

@@ -3,7 +3,7 @@ account balances. Balances are account-level totals, so each account becomes one
 balances (cards, loans) are skipped because debts live under Liabilities."""
 
 import base64
-import ipaddress
+import os
 from datetime import UTC, datetime
 from urllib.parse import urlsplit, urlunsplit
 
@@ -28,21 +28,22 @@ def _config() -> SimpleFinConfig:
     return cfg
 
 
-def _check_public_https(url: str) -> None:
-    """SSRF guard: the claim URL comes from user input, so require https and a public-looking host (no IP literals in private
-    ranges, no localhost/internal single-label names)."""
+ALLOWED_HOSTS = ("bridge.simplefin.org",)
+
+
+def _allowed_hosts() -> tuple[str, ...]:
+    """Claim URLs come from user input (SSRF), so only known SimpleFIN hosts are contacted. Self-hosted bridges are added with
+    SIMPLEFIN_HOSTS=host1,host2."""
+    extra = tuple(h.strip().lower() for h in os.getenv("SIMPLEFIN_HOSTS", "").split(",") if h.strip())
+    return ALLOWED_HOSTS + extra
+
+
+def _check_public_https(url: str) -> str:
     parts = urlsplit(url)
     host = (parts.hostname or "").lower()
-    if parts.scheme != "https" or not host:
-        raise ValueError("Claim URL must be https")
-    try:
-        ip = ipaddress.ip_address(host)
-    except ValueError:
-        if "." not in host or host.endswith((".local", ".internal", ".localhost", ".lan")):
-            raise ValueError("Claim URL host must be a public domain") from None
-    else:
-        if not ip.is_global:
-            raise ValueError("Claim URL host must be public")
+    if parts.scheme != "https" or host not in _allowed_hosts() or parts.username or parts.password or parts.port not in (None, 443):
+        raise ValueError("Claim URL must be https on a known SimpleFIN host (set SIMPLEFIN_HOSTS for a self-hosted bridge)")
+    return urlunsplit(("https", host, parts.path, parts.query, ""))
 
 
 def claim(setup_token: str) -> str:
@@ -51,7 +52,7 @@ def claim(setup_token: str) -> str:
         url = base64.b64decode(setup_token.strip(), validate=True).decode()
     except Exception as e:
         raise ValueError("Setup token is not valid base64") from e
-    _check_public_https(url)
+    url = _check_public_https(url)
     r = requests.post(url, timeout=TIMEOUT)
     if r.status_code != 200 or not r.text.startswith("https://"):
         raise ValueError(f"SimpleFIN claim failed (HTTP {r.status_code}); setup tokens are single-use")
