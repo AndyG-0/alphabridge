@@ -69,4 +69,4 @@ repos:
         entry: bash -c 'echo "Refusing to commit private data:"; printf "%s\n" "$@"; exit 1' --
         language: system
         files: '(^|/)\.env$|\.(db|db-wal|csv|pdf|xlsx)$|^(data|samples|statements)/'
-        exclude: '^frontend/public/'
+        exclude: '^(frontend/public/|backend/tests/fixtures_data/)'

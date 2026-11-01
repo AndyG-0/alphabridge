@@ -112,6 +112,122 @@ INSTITUTIONS: list[dict] = [
         ],
     },
     {
+        "id": "SCHWAB",
+        "label": "Charles Schwab",
+        "kind": "brokerage",
+        "login_url": "https://www.schwab.com/",
+        "docs": [
+            {
+                "what": "Positions per account",
+                "steps": [
+                    "Log in and open Accounts > Positions.",
+                    "Choose Export (top right) to download the CSV.",
+                    "Upload it; the account name is read from the title line.",
+                ],
+                "formats": ["CSV"],
+            }
+        ],
+    },
+    {
+        "id": "VANGUARD",
+        "label": "Vanguard",
+        "kind": "brokerage",
+        "login_url": "https://investor.vanguard.com/",
+        "docs": [
+            {
+                "what": "Holdings (all accounts)",
+                "steps": [
+                    "Log in and open Balances & holdings > Holdings.",
+                    "Use Download (CSV) at the bottom of the page.",
+                    "Upload it; the transaction section after the holdings is ignored.",
+                ],
+                "formats": ["CSV", "OFX"],
+            }
+        ],
+    },
+    {
+        "id": "ETRADE",
+        "label": "E*TRADE",
+        "kind": "brokerage",
+        "login_url": "https://us.etrade.com/",
+        "docs": [
+            {
+                "what": "Portfolio positions",
+                "steps": [
+                    "Log in and open Portfolios > Portfolio.",
+                    "Choose Download > Download Positions (CSV).",
+                    "Upload it and choose the target account.",
+                ],
+                "formats": ["CSV", "OFX"],
+            }
+        ],
+    },
+    {
+        "id": "ROBINHOOD",
+        "label": "Robinhood",
+        "kind": "brokerage",
+        "login_url": "https://robinhood.com/",
+        "docs": [
+            {
+                "what": "Holdings (Instrument, Quantity, Equity)",
+                "steps": [
+                    "Robinhood has no positions export: copy the Investing holdings into a CSV with Instrument, Quantity and Equity columns.",
+                    "Or use the generic mapper to save the column layout once.",
+                ],
+                "formats": ["CSV"],
+            }
+        ],
+    },
+    {
+        "id": "IBKR",
+        "label": "Interactive Brokers",
+        "kind": "brokerage",
+        "login_url": "https://www.interactivebrokers.com/",
+        "docs": [
+            {
+                "what": "Activity Statement (Open Positions)",
+                "steps": [
+                    "Log in and open Performance & Reports > Statements.",
+                    "Run an Activity statement, format CSV.",
+                    "Upload it; only the Open Positions section is read, foreign-currency rows are converted to USD.",
+                ],
+                "formats": ["CSV"],
+            }
+        ],
+    },
+    {
+        "id": "EMPOWER",
+        "label": "Empower",
+        "kind": "retirement_plan",
+        "login_url": "https://home.empower.com/",
+        "docs": [
+            {
+                "what": "Plan or tracked-account holdings",
+                "steps": [
+                    "Log in and open the account, then Holdings, and download the CSV if offered.",
+                    "If the columns are not recognized, save a mapping in the generic mapper.",
+                ],
+                "formats": ["CSV"],
+            }
+        ],
+    },
+    {
+        "id": "BUDGET_APPS",
+        "label": "Monarch / YNAB / Mint",
+        "kind": "other",
+        "login_url": "",
+        "docs": [
+            {
+                "what": "Transaction exports (not balances)",
+                "steps": [
+                    "These apps export transactions without account balances, so they cannot set a holding value here.",
+                    "Use your bank's own export for balances; spending import is tracked separately (D4).",
+                ],
+                "formats": ["CSV"],
+            }
+        ],
+    },
+    {
         "id": "OTHER",
         "label": "Other",
         "kind": "other",
@@ -143,6 +259,12 @@ NAME_RULES: list[tuple[tuple[str, ...], dict]] = [
     (("netbenefits", "401", "403"), dict(institution="FIDELITY_NETBENEFITS", **_PLAN)),
     (("computershare", "shareowner", "equiniti"), dict(institution="COMPUTERSHARE", tax_bucket="TAXABLE_BROKERAGE", risk_tier="AGGRESSIVE_SATELLITE")),
     (("roth",), dict(institution="FIDELITY_RETAIL", tax_bucket="ROTH", risk_tier="MODERATE_GROWTH")),
+    (("schwab",), dict(institution="SCHWAB", tax_bucket="TAXABLE_BROKERAGE", risk_tier="AGGRESSIVE_SATELLITE")),
+    (("vanguard",), dict(institution="VANGUARD", tax_bucket="TAXABLE_BROKERAGE", risk_tier="AGGRESSIVE_SATELLITE")),
+    (("etrade", "e*trade"), dict(institution="ETRADE", tax_bucket="TAXABLE_BROKERAGE", risk_tier="AGGRESSIVE_SATELLITE")),
+    (("robinhood",), dict(institution="ROBINHOOD", tax_bucket="TAXABLE_BROKERAGE", risk_tier="AGGRESSIVE_SATELLITE")),
+    (("interactive brokers", "ibkr"), dict(institution="IBKR", tax_bucket="TAXABLE_BROKERAGE", risk_tier="AGGRESSIVE_SATELLITE")),
+    (("empower",), dict(institution="EMPOWER", **_PLAN)),
 ]
 DEFAULT_ATTRS = dict(institution="FIDELITY_RETAIL", tax_bucket="TAXABLE_BROKERAGE", risk_tier="AGGRESSIVE_SATELLITE")
 

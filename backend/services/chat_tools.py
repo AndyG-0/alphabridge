@@ -41,6 +41,7 @@ from services import (
     spending,
     state_rules,
     tax_lots,
+    transactions,
     withdrawals,
     xray,
 )
@@ -316,6 +317,11 @@ TOOLS = [
         "get_plan_menu",
         "Entered 401(k) plan-menu funds (ticker, name, asset class, expense ratio) for one account.",
         _obj({"account_id": {"type": "integer"}}, ["account_id"]),
+    ),
+    (
+        "get_spending_actuals",
+        "Measured monthly spending from imported transactions vs the plan assumption: average, by category, lifestyle-creep flag, uncategorized count.",
+        _obj({"months": {"type": "integer"}}),
     ),
     ("get_ingestion_log", "Recent file imports: filename, parser, rows, status (OK/ERROR/UNDONE), message.", _obj({"limit": {"type": "integer"}})),
     (
@@ -883,6 +889,7 @@ HANDLERS = {
     "get_debt_payoff_schedule": lambda a: _payoffs(),
     "get_plan_menu": _plan_menu,
     "get_ingestion_log": _ingest_log,
+    "get_spending_actuals": lambda a: transactions.actuals(get_profile(), months=int(a.get("months") or 12)),
     "get_data_gaps": lambda a: _gaps(),
     "get_screener_results": _screener,
     "get_sector_overview": lambda a: market_data.sector_strength(),

@@ -1,0 +1,9 @@
+!Type:Bank
+D01/02/2026
+T1,000.00
+PDeposit
+^
+D01/05/2026
+T-250.50
+PGroceries
+^

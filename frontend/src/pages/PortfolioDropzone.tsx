@@ -14,6 +14,7 @@ import {
 import { Badge, Button, Card, Err, Input, usd } from '../components/ui'
 import { useAsync } from '../hooks'
 import ImportHistoryCard from './ImportHistoryCard'
+import SpendingCard from './SpendingCard'
 import PerformanceCard from './PerformanceCard'
 import RebalanceCard from './RebalanceCard'
 import RiskCard from './RiskCard'
@@ -339,8 +340,9 @@ export default function PortfolioDropzone() {
   const pf = useAsync(api.portfolio)
   const inst = useAsync(api.institutions)
   const labels = inst.data
-    ?.filter((i) => i.id !== 'OTHER')
+    ?.filter((i) => i.id !== 'OTHER' && i.kind !== 'other')
     .map((i) => i.label.replace(/ \(.*\)$/, ''))
+    .slice(0, 5)
     .join(' / ')
   const instLabel = (id: string) => inst.data?.find((i) => i.id === id)?.label ?? id
   const un = useAsync(api.unmapped)
@@ -552,7 +554,7 @@ export default function PortfolioDropzone() {
           <span className="text-sm">{busy ? 'Parsing…' : `Drop a ${labels ?? 'statement'} CSV, PDF or photo, or tap to choose`}</span>
           <input
             type="file"
-            accept=".csv,.pdf,.png,.jpg,.jpeg"
+            accept=".csv,.ofx,.qfx,.qif,.pdf,.png,.jpg,.jpeg"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0]
@@ -636,6 +638,7 @@ export default function PortfolioDropzone() {
         ))}
 
       <ImportHistoryCard version={logVersion} onChanged={() => pf.reload()} />
+      <SpendingCard />
 
       {(['SELF', 'SPOUSE', 'JOINT'] as Owner[]).map((o) => {
         const accts = pf.data?.accounts.filter((a) => a.owner === o) ?? []

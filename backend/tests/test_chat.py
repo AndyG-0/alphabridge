@@ -175,6 +175,7 @@ def test_every_read_route_family_has_a_chat_tool(client):
         "/api/planner/income-streams",
         "/api/planner/stress",
         "/api/rmd",
+        "/api/spending/actuals",
         "/api/rmd/inherited",
         "/api/liabilities",
         "/api/pensions",
@@ -202,6 +203,13 @@ def test_every_read_route_family_has_a_chat_tool(client):
     }
     excluded = {
         "/api/institutions",
+        "/api/export/json",
+        "/api/export/report.<fmt>",
+        "/api/share/<token>/report.<fmt>",
+        "/api/ingest/templates",
+        "/api/simplefin",
+        "/api/spending/transactions",
+        "/api/spending/rules",
         "/api/liabilities/help",
         "/api/settings/llm",
         "/api/health",

@@ -8,7 +8,7 @@ from pathlib import PurePosixPath, PureWindowsPath
 
 from flask import Flask, jsonify, request
 
-ALLOWED_UPLOAD_EXTS = (".csv", ".txt", ".pdf", ".png", ".jpg", ".jpeg")
+ALLOWED_UPLOAD_EXTS = (".csv", ".txt", ".ofx", ".qfx", ".qif", ".pdf", ".png", ".jpg", ".jpeg")
 MAGIC: dict[str, tuple[bytes, ...]] = {".pdf": (b"%PDF-",), ".png": (b"\x89PNG\r\n\x1a\n",), ".jpg": (b"\xff\xd8\xff",), ".jpeg": (b"\xff\xd8\xff",)}
 MAX_PDF_PAGES = 60
 MAX_IMAGE_PIXELS = 50_000_000  # decompression-bomb guard for PIL

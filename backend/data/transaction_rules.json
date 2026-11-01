@@ -1,0 +1,28 @@
+{
+  "source_url": null,
+  "retrieved_on": "2026-10-31",
+  "verified": false,
+  "notes": "Project-chosen keyword rules for first-pass categorization; user rules always win and LLM suggestions are never applied without confirmation.",
+  "categories": ["housing", "food", "transport", "education", "health", "discretionary", "other"],
+  "excluded_categories": ["transfer", "income"],
+  "keywords": {
+    "transfer": ["transfer", "payment thank you", "autopay", "credit card payment", "zelle to", "venmo cashout", "ach pmt"],
+    "housing": ["mortgage", "rent", "hoa", "property tax", "electric", "water bill", "gas bill", "utility", "internet", "comcast", "xfinity", "home depot", "lowes"],
+    "food": ["grocery", "safeway", "kroger", "whole foods", "trader joe", "costco", "restaurant", "doordash", "ubereats", "starbucks", "mcdonald", "chipotle"],
+    "transport": ["shell", "chevron", "exxon", "fuel", "gas station", "uber", "lyft", "parking", "auto insurance", "geico", "dmv"],
+    "education": ["tuition", "university", "college", "school", "coursera", "student loan"],
+    "health": ["pharmacy", "cvs", "walgreens", "doctor", "dental", "hospital", "medical", "health insurance", "clinic"],
+    "discretionary": ["amazon", "netflix", "spotify", "hulu", "disney", "airline", "hotel", "airbnb", "target", "best buy", "apple.com", "steam"],
+    "income": ["payroll", "direct deposit", "salary", "dividend", "interest paid", "refund"]
+  },
+  "source_category_map": {
+    "groceries": "food", "restaurants": "food", "dining": "food", "food & dining": "food", "coffee shops": "food",
+    "mortgage & rent": "housing", "rent": "housing", "utilities": "housing", "home": "housing",
+    "auto & transport": "transport", "gas": "transport", "gas & fuel": "transport", "auto": "transport", "parking": "transport",
+    "education": "education", "tuition": "education",
+    "health & fitness": "health", "medical": "health", "pharmacy": "health", "doctor": "health",
+    "shopping": "discretionary", "entertainment": "discretionary", "travel": "discretionary", "subscriptions": "discretionary",
+    "transfer": "transfer", "credit card payment": "transfer", "income": "income", "paycheck": "income"
+  },
+  "lifestyle_creep": {"recent_months": 3, "baseline_months": 6, "threshold": 0.10, "min_months_total": 6}
+}

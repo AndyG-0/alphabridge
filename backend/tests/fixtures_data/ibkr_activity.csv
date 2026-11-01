@@ -1,0 +1,7 @@
+Statement,Data,BrokerName,Test Broker LLC
+Account Information,Header,Field Name,Field Value
+Account Information,Data,Account,U1234567
+Open Positions,Header,DataDiscriminator,Asset Category,Currency,Symbol,Quantity,Mult,Cost Price,Cost Basis,Close Price,Value,Unrealized P/L,Code
+Open Positions,Data,Summary,Stocks,USD,TSTA,10,1,40,400,50,500,100,
+Open Positions,Data,Summary,Stocks,USD,TSTB,20,1,45,900,50,1000,100,
+Open Positions,Total,,Stocks,USD,,,,,1300,,1500,200,
