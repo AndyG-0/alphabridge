@@ -12,4 +12,4 @@ pip-audit
 vulture
 types-requests
 pre-commit
-psycopg[binary]>=3.2  # Postgres driver for the DATABASE_URL-swap tests
+psycopg[binary]>=3.3.6  # Postgres driver for the DATABASE_URL-swap tests
