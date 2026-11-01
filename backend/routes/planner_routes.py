@@ -9,8 +9,9 @@ from routes._helpers import get_profile
 from routes.portfolio_routes import holding_dict
 from schemas import PlannedEventIn, ScenarioIn
 from services import assumptions as assumptions_svc
+from services import cash_backtest, cash_plan, market_data, planner, quant_engine
+from services import ladder as ladder_svc
 from services import liabilities as liab_svc
-from services import market_data, planner, quant_engine
 from services import roth as roth_svc
 from services import scenarios as scen_svc
 from services import spending as spending_svc
@@ -359,6 +360,68 @@ def cash():
     rec["notes"] = notes
     rec["satellite_allocation"] = planner.allocate_surplus(rec["deploy_now"], p.risk_appetite)
     return jsonify(rec)
+
+
+@bp.get("/planner/cash/plan")
+def cash_plan_route():
+    """Ladder, T-bill vs money-market tax comparison, emergency + bridge reserves and DCA schedule (deterministic)."""
+    s = db.session()
+    p = get_profile()
+    try:
+        market, notes = market_data.market_inputs(current_app.config["FRED_API_KEY"])
+    except Exception as e:
+        return jsonify(error=f"Market data unavailable: {e}"), 503
+    mmf = p.current_money_market_yield if p.money_market_yield_override else max(market.tbill_3m - 0.0015, 0)
+    a = request.args
+    opts: dict = {}
+    for k in ("ladder_amount", "cd_yield", "ibond_rate", "mmf_treasury_share"):
+        if a.get(k) is not None:
+            opts[k] = a.get(k, type=float)
+    if a.get("rungs"):
+        try:
+            opts["rungs"] = [int(x) for x in a["rungs"].split(",") if x]
+        except ValueError:
+            return jsonify(error="rungs must be comma-separated months"), 400
+        if not opts["rungs"] or any(m < 1 or m > 120 for m in opts["rungs"]):
+            return jsonify(error="rungs must be 1-120 months"), 400
+    out = cash_plan.build(s, p, market, mmf, opts)
+    out["market_notes"] = notes
+    out["dca_active"] = p.dca_plan or None
+    return jsonify(out)
+
+
+@bp.post("/planner/cash/dca")
+def cash_dca_set():
+    """Save a DCA schedule; the daily job sends one reminder per tranche when it falls due."""
+    body = request.get_json(silent=True) or {}
+    try:
+        amount, tranches = float(body["amount"]), int(body["tranches"])
+        start = date.fromisoformat(body.get("start") or date.today().isoformat())
+    except (KeyError, TypeError, ValueError):
+        return jsonify(error="amount, tranches (and optional ISO start) required"), 400
+    if amount <= 0 or not 1 <= tranches <= 24:
+        return jsonify(error="amount must be positive and tranches 1-24"), 400
+    p = get_profile()
+    p.dca_plan = {
+        "amount": amount,
+        "tranches": tranches,
+        "schedule": ladder_svc.dca_schedule(amount, tranches, start, body.get("interval_days")),
+        "notified": [],
+    }
+    db.session().commit()
+    return jsonify(p.dca_plan)
+
+
+@bp.delete("/planner/cash/dca")
+def cash_dca_clear():
+    get_profile().dca_plan = {}
+    db.session().commit()
+    return "", 204
+
+
+@bp.get("/planner/cash/backtest")
+def cash_backtest_route():
+    return jsonify(cash_backtest.run())
 
 
 @bp.get("/planner/menu-grade/<int:aid>")

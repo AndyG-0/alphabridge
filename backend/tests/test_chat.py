@@ -147,6 +147,8 @@ def test_every_read_route_family_has_a_chat_tool(client):
         "/api/planner/events",
         "/api/planner/barbell",
         "/api/planner/cash",
+        "/api/planner/cash/plan",
+        "/api/planner/cash/backtest",
         "/api/planner/menu-grade/<int:aid>",
         "/api/planner/debt",
         "/api/planner/withdrawals",

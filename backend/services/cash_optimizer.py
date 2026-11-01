@@ -54,6 +54,13 @@ def signal_label(score: float) -> str:
     return "HOLD_MMF"
 
 
+def deploy_fraction(score: float) -> float:
+    """Share of the investable surplus to deploy this month for a given score (0 under the DCA threshold)."""
+    label = signal_label(score)
+    frac = {"HOLD_MMF": 0.0, "DCA": 0.25 + 0.25 * (score - 45) / 25, "AGGRESSIVE_BUY": 0.6 + 0.3 * (score - 70) / 30}[label]
+    return _clamp(frac * 100, 0, 100) / 100
+
+
 def recommend(
     cash_total: float,
     monthly_expenses: float,
@@ -71,8 +78,7 @@ def recommend(
     sc = deployment_score(market)
     label = signal_label(sc["score"])
     # Fraction of surplus to deploy this month scales with score; floor by label.
-    frac = {"HOLD_MMF": 0.0, "DCA": 0.25 + 0.25 * (sc["score"] - 45) / 25, "AGGRESSIVE_BUY": 0.6 + 0.3 * (sc["score"] - 70) / 30}[label]
-    frac = _clamp(frac * 100, 0, 100) / 100 * max_deploy_fraction
+    frac = deploy_fraction(sc["score"]) * max_deploy_fraction
     deploy = round(surplus * frac, 2)
     tranches = {"HOLD_MMF": 0, "DCA": 3, "AGGRESSIVE_BUY": 2}[label] if deploy > 0 else 0
     keep = round(cash_total - deploy, 2)

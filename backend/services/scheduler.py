@@ -73,6 +73,7 @@ def daily_checks(app):
             except RuntimeError as e:
                 log.warning("notify failed: %s", e)
         _rebalance_alert(s, p)
+        _dca_reminder(s, p)
 
 
 def _rebalance_alert(s, profile):
@@ -95,6 +96,30 @@ def _rebalance_alert(s, profile):
         )
     except RuntimeError as e:
         log.warning("notify failed: %s", e)
+
+
+def _dca_reminder(s, profile):
+    """One reminder per DCA tranche that has come due; remembered so it isn't repeated."""
+    from datetime import date
+
+    from services import ladder, notifier
+
+    plan = profile.dca_plan or None
+    due = ladder.due_tranches(plan, date.today())
+    if not plan or not due:
+        return
+    try:
+        notifier.notify(
+            "DCA tranche due",
+            "A scheduled deployment from cash is due.",
+            "buy",
+            [(t["on"], f"${t['amount']:,.0f}") for t in due],
+        )
+    except RuntimeError as e:
+        log.warning("notify failed: %s", e)
+        return
+    profile.dca_plan = {**plan, "notified": [*plan.get("notified", []), *[t["on"] for t in due]]}
+    s.commit()
 
 
 @_tracked("net_worth_snapshot")

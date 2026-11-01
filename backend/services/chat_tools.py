@@ -23,6 +23,8 @@ from models import (
 )
 from routes._helpers import get_profile
 from services import (
+    cash_backtest,
+    cash_plan,
     early_access,
     household,
     hsa,
@@ -342,6 +344,17 @@ TOOLS = [
         "Drift from the target allocation, a self-funding trade list that respects 401(k) menus and minimizes realized gains in taxable, "
         "estimated tax on those gains, and asset-location suggestions (deterministic).",
         _obj({"threshold": {"type": "number"}}),
+    ),
+    (
+        "get_cash_plan",
+        "Cash engine details: Treasury/CD ladder, T-bill vs money-market after-tax comparison for the user's state, I-bond cap, emergency fund "
+        "and first-years-of-retirement bridge reserve from the withdrawal simulator, and the DCA schedule (deterministic).",
+        _obj({"ladder_amount": {"type": "number"}, "cd_yield": {"type": "number"}, "ibond_rate": {"type": "number"}}),
+    ),
+    (
+        "get_cash_backtest",
+        "Historical backtest (annual Damodaran data) of the cash-deployment rule vs buy-and-hold, naive DCA and T-bills (deterministic).",
+        _obj({}),
     ),
     (
         "get_risk_report",
@@ -859,11 +872,21 @@ HANDLERS = {
         db.session(), get_profile(), market_data.get_closes, market_data.get_fundamentals, assume_contributions=bool(a.get("assume_contributions"))
     ),
     "get_rebalance_plan": lambda a: rebalance.report(db.session(), get_profile(), float(a.get("threshold") or rebalance.DEFAULT_THRESHOLD)),
+    "get_cash_plan": lambda a: _cash_plan(a),
+    "get_cash_backtest": lambda a: cash_backtest.run(),
     "get_risk_report": lambda a: risk.report(db.session(), market_data.get_closes),
     "get_tax_lot_report": lambda a: tax_lots.report(db.session(), get_profile()),
     "suggest_lot_sale": lambda a: _suggest_lot_sale(a),
     "grade_401k_menu": _menu,
 }
+
+
+def _cash_plan(a: dict) -> dict:
+    p = get_profile()
+    market, _ = market_data.market_inputs(current_app.config["FRED_API_KEY"])
+    mmf = p.current_money_market_yield if p.money_market_yield_override else max(market.tbill_3m - 0.0015, 0)
+    opts = {k: float(a[k]) for k in ("ladder_amount", "cd_yield", "ibond_rate") if a.get(k) is not None}
+    return cash_plan.build(db.session(), p, market, mmf, opts)
 
 
 def _suggest_lot_sale(a: dict) -> dict:

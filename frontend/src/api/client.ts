@@ -760,7 +760,39 @@ export type RiskReport = {
   }[]
 }
 
+export type CashPlan = {
+  signal: string
+  ladder: {
+    instrument: string
+    amount: number
+    blended_yield: number
+    annual_interest: number
+    next_maturity: string | null
+    rungs: { months: number; amount: number; yield: number; matures_on: string; interest_at_maturity: number }[]
+  }
+  ladder_available: number
+  tax_comparison: {
+    state: string
+    state_rate: number
+    state_rate_known: boolean
+    mmf_after_tax: number
+    tbill_after_tax: number
+    advantage: number
+    winner: 'TBILL' | 'MMF'
+  }
+  i_bond: { annual_purchase_cap: number; verdict: string; min_hold_months: number; early_redemption_penalty: string }
+  emergency_fund: { months: number; essential_monthly: number; target: number; have_cash: number; gap: number }
+  bridge_reserve: { years: number; total: number; per_year: number[]; first_year: number | null; retire_age: number }
+  total_reserve_target: number
+  dca: { amount: number; tranches: number; schedule: { on: string; amount: number }[] } | null
+  dca_active: { amount: number; tranches: number; schedule: { on: string; amount: number }[]; notified: string[] } | null
+  notes: string[]
+}
+
 export const api = {
+  cashPlan: () => req<CashPlan>('/planner/cash/plan'),
+  saveDca: (b: { amount: number; tranches: number }) => req<NonNullable<CashPlan['dca_active']>>('/planner/cash/dca', json('POST', b)),
+  clearDca: () => req<null>('/planner/cash/dca', json('DELETE')),
   risk: () => req<RiskReport>('/portfolio/risk'),
   taxLots: () => req<TaxLotReport>('/tax-lots'),
   lotSale: (symbol: string, amount: number) => req<LotSale>(`/tax-lots/sell?symbol=${encodeURIComponent(symbol)}&amount=${amount}`),

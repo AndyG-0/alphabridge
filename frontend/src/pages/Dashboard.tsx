@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { api, type Owner } from '../api/client'
 import { Badge, Bar, Card, Err, Hint, pct, usd } from '../components/ui'
 import { useAsync } from '../hooks'
+import CashPlanCard from './CashPlanCard'
 import NetWorthCard from './NetWorthCard'
 
 const COLORS = { safe_core: '#38bdf8', satellite: '#a78bfa', dry_powder: '#34d399' }
@@ -159,6 +160,8 @@ export default function Dashboard() {
             )
           })()}
       </Card>
+
+      <CashPlanCard />
 
       <Card title="Retirement">
         <Err error={fire.error} />
