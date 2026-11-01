@@ -1,0 +1,30 @@
+{
+  "_source": "Net expense ratios as published on each issuer's fund page (Vanguard, Fidelity, Schwab, iShares, SPDR, Invesco); values are rounded and can change, so edit if an issuer cuts fees. 401(k) menu entries (AllowedPlanMenu.expense_ratio) take precedence.",
+  "_retrieved_on": "2026-10-31",
+  "_verified": false,
+  "expense_ratios": {
+    "VTI": 0.0003,
+    "VOO": 0.0003,
+    "IVV": 0.0003,
+    "SPY": 0.000945,
+    "QQQ": 0.002,
+    "VXUS": 0.0005,
+    "VEA": 0.0005,
+    "VWO": 0.0007,
+    "BND": 0.0003,
+    "AGG": 0.0003,
+    "VGT": 0.0009,
+    "VUG": 0.0004,
+    "VTV": 0.0004,
+    "VYM": 0.0006,
+    "SCHD": 0.0006,
+    "SCHB": 0.0003,
+    "FXAIX": 0.00015,
+    "FSKAX": 0.00015,
+    "FZROX": 0.0,
+    "FZILX": 0.0,
+    "FXNAX": 0.0025,
+    "SPAXX": 0.0042,
+    "FDRXX": 0.0042
+  }
+}

@@ -296,5 +296,34 @@ def simple_dcf(fcf: float, growth: float, discount: float = 0.10, terminal_growt
     return (value + tv) / shares
 
 
+def dcf_grid(
+    fcf: float,
+    growth: float,
+    discount: float,
+    growth_steps: list[float],
+    discount_steps: list[float],
+    terminal_growth: float = 0.025,
+    years: int = 10,
+    shares: float = 1.0,
+) -> dict:
+    """Per-share DCF over a growth x discount grid. Cells where discount <= terminal growth are None."""
+    rows = []
+    for dg in growth_steps:
+        g = growth + dg
+        cells = []
+        for dd in discount_steps:
+            d = discount + dd
+            cells.append(None if d <= terminal_growth else simple_dcf(fcf, g, d, terminal_growth, years, shares))
+        rows.append({"growth": g, "values": cells})
+    vals = [v for r in rows for v in r["values"] if v is not None]
+    return {
+        "discounts": [discount + dd for dd in discount_steps],
+        "rows": rows,
+        "base": simple_dcf(fcf, growth, discount, terminal_growth, years, shares) if discount > terminal_growth else None,
+        "low": min(vals) if vals else None,
+        "high": max(vals) if vals else None,
+    }
+
+
 def concentration(exposures: dict[str, float], total: float) -> dict[str, float]:
     return {k: v / total for k, v in exposures.items()} if total > 0 else {}

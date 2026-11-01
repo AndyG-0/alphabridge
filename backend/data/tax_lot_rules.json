@@ -1,0 +1,8 @@
+{
+  "_source": "IRC §1091 and IRS Publication 550 (wash sales: 30 days before or after the sale, including purchases in IRAs and by a spouse, Rev. Rul. 2008-5); IRC §1211(b) and Schedule D instructions (net capital loss offsets up to $3,000 of ordinary income, $1,500 if married filing separately); IRC §1222 (long-term means held more than one year). https://www.irs.gov/publications/p550",
+  "_retrieved_on": "2026-10-31",
+  "wash_sale_days": 30,
+  "long_term_days_over": 365,
+  "capital_loss_ordinary_offset": 3000,
+  "min_harvest_loss": 250
+}

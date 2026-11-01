@@ -1,14 +1,15 @@
 import re
+from datetime import date
 
 from flask import Blueprint, jsonify, request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 import db
-from models import Account, AllowedPlanMenu, Holding, IngestionLog, Liability, NetWorthSnapshot
+from models import Account, AllowedPlanMenu, CashFlow, Holding, IngestionLog, Liability, TaxLot
 from routes._helpers import get_profile
 from schemas import AccountIn, ConfirmedIngest, PlanMenuItemIn, ProfileIn, ProxyMapIn
 from security import safe_filename, validate_upload
-from services import doc_reader, ingestion, institutions, xray
+from services import corporate_actions, doc_reader, ingestion, institutions, market_data, networth, performance, rebalance, risk, tax_lots, xray
 
 bp = Blueprint("portfolio", __name__, url_prefix="/api")
 
@@ -183,7 +184,10 @@ def ingest():
             elif low.endswith(doc_reader.IMAGE_EXTS):
                 result = ingestion.parse_image(data)
             else:
-                result = ingestion.parse_csv(data.decode("utf-8-sig", errors="replace"))
+                text = data.decode("utf-8-sig", errors="replace")
+                if ingestion.is_lot_export(text):
+                    return jsonify(error="This is a lot-level cost-basis export. Use 'Import tax lots' so it isn't read as positions."), 422
+                result = ingestion.parse_csv(text)
     except Exception as e:
         s = db.session()
         s.add(IngestionLog(filename=name, account_id=account_id, status="ERROR", message=str(e)[:500]))
@@ -200,8 +204,8 @@ def ingest():
             return jsonify(error=str(e)), 400
         return jsonify(ingestion.apply_pension(result, name, pension_owner)), 201
     if not result.rows:
-        return jsonify(error="No holdings found in file", warnings=result.warnings), 422
-    if result.needs_review:
+        return jsonify(error="No holdings found in file", warnings=result.warnings, row_errors=result.row_errors), 422
+    if result.needs_review or request.form.get("dry_run") == "1":
         return jsonify(
             preview=True,
             parser=result.parser,
@@ -210,6 +214,7 @@ def ingest():
             checks=result.checks,
             warnings=result.warnings,
             filename=name,
+            row_errors=result.row_errors,
             rows=[_row_dict(r) for r in result.rows],
         ), 200
     if account_id is None:
@@ -243,7 +248,9 @@ def portfolio_xray():
 
 @bp.get("/ingest/log")
 def ingest_log():
-    rows = db.session().query(IngestionLog).order_by(IngestionLog.id.desc()).limit(50).all()
+    s = db.session()
+    rows = s.query(IngestionLog).order_by(IngestionLog.id.desc()).limit(50).all()
+    names = {a.id: a.name for a in s.query(Account).all()}
     return jsonify(
         [
             {
@@ -254,28 +261,201 @@ def ingest_log():
                 "status": r.status,
                 "message": r.message,
                 "created_at": r.created_at.isoformat(),
+                "account_id": r.account_id,
+                "account": names.get(r.account_id),
+                "batch_id": r.batch_id,
+                "content_hash": r.content_hash[:12],
+                "can_undo": ingestion.can_undo(s, r),
+                "undone_at": r.undone_at.isoformat() if r.undone_at else None,
             }
             for r in rows
         ]
     )
+
+
+@bp.post("/ingest/<int:log_id>/undo")
+def ingest_undo(log_id):
+    try:
+        return jsonify(ingestion.undo_import(db.session(), log_id))
+    except LookupError:
+        return jsonify(error="import not found"), 404
+    except ValueError:
+        return jsonify(error="this import can't be undone (it was already undone, or holdings changed since)"), 409
+
+
+class SplitIn(BaseModel):
+    ratio: float
+
+
+class SpinoffIn(BaseModel):
+    symbol: str
+    shares: float
+    basis_fraction: float
+    price: float = 0.0
+    name: str = ""
+
+
+@bp.post("/holdings/<int:hid>/split")
+def holding_split(hid):
+    s = db.session()
+    h = s.get(Holding, hid)
+    if h is None:
+        return jsonify(error="holding not found"), 404
+    body = SplitIn.model_validate(request.get_json(force=True))
+    try:
+        out = corporate_actions.split(h, body.ratio)
+    except ValueError:
+        return jsonify(error="split ratio must be positive"), 400
+    s.commit()
+    return jsonify(out)
+
+
+@bp.post("/holdings/<int:hid>/spinoff")
+def holding_spinoff(hid):
+    s = db.session()
+    h = s.get(Holding, hid)
+    if h is None:
+        return jsonify(error="holding not found"), 404
+    b = SpinoffIn.model_validate(request.get_json(force=True))
+    try:
+        out = corporate_actions.spinoff(s, h, b.symbol, b.shares, b.basis_fraction, b.price, b.name)
+    except ValueError:
+        return jsonify(error="invalid spin-off: shares must be positive, basis fraction between 0 and 1, and the symbol different"), 400
+    s.flush()
+    ingestion.snapshot_net_worth(s)
+    s.commit()
+    return jsonify(out), 201
 
 
 @bp.get("/networth/history")
 def networth_history():
-    rows = db.session().query(NetWorthSnapshot).order_by(NetWorthSnapshot.taken_at).all()
-    return jsonify(
-        [
-            {
-                "taken_at": r.taken_at.isoformat(),
-                "total": r.total,
-                "safe_core": r.safe_core,
-                "satellite": r.satellite,
-                "dry_powder": r.dry_powder,
-                "liabilities": r.liabilities,
-            }
-            for r in rows
-        ]
-    )
+    return jsonify(networth.history(db.session()))
+
+
+@bp.get("/networth/summary")
+def networth_summary():
+    return jsonify(networth.summary(db.session(), get_profile()))
+
+
+class CashFlowIn(BaseModel):
+    on: date
+    amount: float
+    note: str = Field(default="", max_length=200)
+
+    @field_validator("amount")
+    @classmethod
+    def _nonzero(cls, v: float) -> float:
+        if v == 0:
+            raise ValueError("amount must be non-zero")
+        return v
+
+
+def flow_dict(f: CashFlow) -> dict:
+    return {"id": f.id, "on": f.on.isoformat(), "amount": f.amount, "note": f.note}
+
+
+@bp.get("/cashflows")
+def cashflows_list():
+    return jsonify([flow_dict(f) for f in db.session().query(CashFlow).order_by(CashFlow.on)])
+
+
+@bp.post("/cashflows")
+def cashflows_add():
+    body = CashFlowIn.model_validate(request.get_json(silent=True) or {})
+    s = db.session()
+    f = CashFlow(on=body.on, amount=body.amount, note=body.note)
+    s.add(f)
+    s.commit()
+    return jsonify(flow_dict(f)), 201
+
+
+@bp.delete("/cashflows/<int:fid>")
+def cashflows_delete(fid):
+    s = db.session()
+    f = s.get(CashFlow, fid)
+    if f is None:
+        return jsonify({"error": "not found"}), 404
+    s.delete(f)
+    s.commit()
+    return "", 204
+
+
+def performance_report(assume: bool) -> dict:
+    return performance.report(db.session(), get_profile(), market_data.get_closes, market_data.get_fundamentals, assume_contributions=assume)
+
+
+@bp.get("/performance")
+def performance_get():
+    return jsonify(performance_report(request.args.get("assume_contributions") in ("1", "true")))
+
+
+def _lot_context(s):
+    from datetime import date as _date
+
+    today = _date.today()
+    accounts = {a.id: a for a in s.query(Account).all()}
+    prices = {(h.account_id, h.symbol): h.current_price for h in s.query(Holding).all() if h.current_price}
+    lots = s.query(TaxLot).order_by(TaxLot.symbol, TaxLot.acquired).all()
+    return today, accounts, lots, [tax_lots.lot_view(lot, prices, today) for lot in lots]
+
+
+@bp.get("/tax-lots")
+def tax_lots_report():
+    return jsonify(tax_lots.report(db.session(), get_profile()))
+
+
+@bp.get("/tax-lots/list")
+def tax_lots_list():
+    _, accounts, _, views = _lot_context(db.session())
+    return jsonify([v | {"account": accounts[v["account_id"]].name} for v in views])
+
+
+@bp.get("/tax-lots/sell")
+def tax_lots_sell():
+    symbol = (request.args.get("symbol") or "").strip()
+    try:
+        amount = float(request.args.get("amount", ""))
+    except ValueError:
+        return jsonify({"error": "amount (dollars) is required"}), 400
+    if not symbol or amount <= 0:
+        return jsonify({"error": "symbol and a positive amount are required"}), 400
+    today, accounts, lots, views = _lot_context(db.session())
+    return jsonify(tax_lots.suggest_sale(views, symbol, amount, get_profile(), today, lots, accounts, request.args.get("account_id", type=int)))
+
+
+@bp.post("/tax-lots/import")
+def tax_lots_import():
+    f = request.files.get("file")
+    account_id = request.form.get("account_id", type=int)
+    if not f or account_id is None:
+        return jsonify(error="file and account_id are required"), 400
+    s = db.session()
+    if s.get(Account, account_id) is None:
+        return jsonify(error="unknown account"), 404
+    name = safe_filename(f.filename or "lots.csv")
+    data = f.read()
+    if bad := validate_upload(name, data):
+        return jsonify(error=bad), 415
+    parsed = ingestion.parse_lots(data.decode("utf-8-sig", errors="replace"))
+    if not parsed.rows:
+        return jsonify(error="No usable lots found.", row_errors=parsed.row_errors, warnings=parsed.warnings), 422
+    return jsonify(ingestion.apply_lots(s, parsed, account_id)), 201
+
+
+@bp.get("/portfolio/risk")
+def portfolio_risk():
+    return jsonify(risk.report(db.session(), market_data.get_closes))
+
+
+@bp.get("/rebalance")
+def rebalance_get():
+    try:
+        threshold = float(request.args.get("threshold", rebalance.DEFAULT_THRESHOLD))
+    except ValueError:
+        return jsonify({"error": "threshold must be a number"}), 400
+    if not 0 < threshold < 1:
+        return jsonify({"error": "threshold must be between 0 and 1"}), 400
+    return jsonify(rebalance.report(db.session(), get_profile(), threshold))
 
 
 def menu_dict(m: AllowedPlanMenu) -> dict:

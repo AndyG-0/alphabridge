@@ -1,6 +1,7 @@
 """Cached yfinance + FRED + EDGAR access. Everything network-bound lives here so it can be mocked."""
 
 import contextlib
+import logging
 import time
 from datetime import UTC, datetime, timedelta
 
@@ -56,6 +57,18 @@ def get_closes(symbol: str, period: str = "2y", ttl: int = 6 * 3600) -> list[flo
     if closes:
         cache_set(key, closes)
     return closes
+
+
+def fx_rate(currency: str) -> float | None:
+    """USD per one unit of `currency` (cached via the price cache); None if it can't be fetched."""
+    cur = currency.strip().upper()
+    if cur in ("", "USD"):
+        return 1.0
+    try:
+        closes = get_closes(f"{cur}USD=X", period="5d", ttl=6 * 3600)
+    except Exception:
+        return None
+    return closes[-1] if closes else None
 
 
 def get_quote(symbol: str) -> dict:
@@ -198,8 +211,9 @@ def macro_snapshot(fred_key: str = "", ttl: int = 3600) -> dict:
             vix = _fred_latest("VIXCLS", fred_key)[0]
             cpis = _fred_latest("CPIAUCSL", fred_key, 13)
             cpi = cpis[0] / cpis[12] - 1
-        except Exception as e:
-            notes.append(f"FRED error: {e}")
+        except Exception:
+            logging.getLogger(__name__).warning("FRED request failed", exc_info=True)
+            notes.append("FRED unavailable; using Yahoo fallbacks")
     if tbill is None:
         tbill = (get_closes("^IRX", "5d", 3600) or [4.5])[-1] / 100
         notes.append("3M T-Bill from Yahoo ^IRX")
@@ -265,3 +279,28 @@ def edgar_filing_context(ticker: str, identity: str, max_chars: int = 12000) -> 
     except Exception:
         pass
     return {"citation": cite, "risk_factors": risk, "mdna": mdna, "financials": fin_text}
+
+
+def insider_transactions(ticker: str, identity: str, limit: int = 25) -> list[dict]:
+    """Recent Form 4 open-market rows [{date, insider, code, shares, price}] via edgartools. Any parse problem returns what was read."""
+    from edgar import Company, set_identity
+
+    set_identity(identity)
+    rows: list[dict] = []
+    for filing in list(Company(ticker).get_filings(form="4").head(limit)):
+        try:
+            f4 = filing.obj()
+            df = f4.market_trades
+            for _, r in df.iterrows():
+                rows.append(
+                    {
+                        "date": str(r.get("Date") or r.get("date") or filing.filing_date)[:10],
+                        "insider": str(getattr(f4, "insider_name", "") or ""),
+                        "code": str(r.get("Code") or r.get("code") or "")[:1],
+                        "shares": float(r.get("Shares") or r.get("shares") or 0),
+                        "price": float(r.get("Price") or r.get("price") or 0),
+                    }
+                )
+        except Exception:
+            continue
+    return rows

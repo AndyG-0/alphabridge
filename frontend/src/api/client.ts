@@ -87,6 +87,25 @@ export interface Portfolio {
   net_worth: number
   by_owner: Record<Owner, { assets: number; liabilities: number }>
 }
+export interface NetWorthPoint {
+  taken_at: string
+  total: number
+  safe_core: number
+  satellite: number
+  dry_powder: number
+  liabilities: number
+  breakdown: { assets?: Record<string, number>; liabilities?: Record<string, number> }
+}
+export interface NetWorthSummary {
+  series: NetWorthPoint[]
+  latest: NetWorthPoint | null
+  milestones: {
+    reached: { level: number; reached_on: string; is_fi: boolean }[]
+    next: { level: number; remaining: number; is_fi: boolean } | null
+  }
+  drift: { month: string; actual: number; planned: number; drift: number; drift_pct: number | null }[]
+  assumptions: { annual_return: number; monthly_contribution: number; baseline: string | null }
+}
 export interface Profile {
   birth_date: string
   spouse_birth_date: string | null
@@ -100,6 +119,7 @@ export interface Profile {
   money_market_yield_override: boolean
   effective_tax_rate: number
   monthly_contribution: number
+  target_allocation?: Record<string, number>
   risk_appetite: number
   sector_concentration_limit: number
   employer_symbol: string
@@ -502,11 +522,34 @@ export interface Pension {
 }
 export type PensionEdit = Partial<Pick<Pension, 'start_age' | 'payout' | 'interest_credit_rate' | 'pay_credit_pct' | 'covered_pay_annual'>>
 
+export interface RowError {
+  line: number
+  symbol: string
+  level: 'error' | 'warn'
+  error: string
+}
 export interface IngestResult {
   pension?: Pension
   rows: number
   needs_mapping: string[]
   parser: string
+  unchanged?: number[]
+  accounts?: number[]
+  row_errors?: RowError[]
+}
+export interface ImportLogEntry {
+  id: number
+  filename: string
+  parser: string
+  rows: number
+  status: string
+  message: string
+  created_at: string
+  account: string | null
+  batch_id: string
+  content_hash: string
+  can_undo: boolean
+  undone_at: string | null
 }
 export interface PreviewRow {
   symbol: string
@@ -547,6 +590,7 @@ export interface IngestPreview {
   filename: string
   checks: { level: 'ok' | 'warn' | 'fail'; message: string }[]
   warnings: string[]
+  row_errors?: RowError[]
   rows: PreviewRow[]
 }
 
@@ -572,7 +616,236 @@ const updateAccount = (a: Account, patch: Partial<Pick<Account, 'name' | 'instit
     }),
   )
 
+export type PerfPeriod = { start: string; end: string; return: number }
+export type BenchmarkRow = { name: string; return: number | null; excess: number | null }
+export type CashFlowRow = { id: number; on: string; amount: number; note: string }
+export type Performance = {
+  points: number
+  flow_mode: 'recorded' | 'none' | 'assumed_monthly_contribution'
+  flows: number
+  notes: string[]
+  returns: {
+    twr: { total: number | null; annualized: number | null; days: number; periods: PerfPeriod[] }
+    mwr: number | null
+    start: string
+    end: string
+    start_value: number
+    end_value: number
+  } | null
+  benchmarks?: { market: BenchmarkRow; target: BenchmarkRow | null; approximate: boolean }
+  fees: {
+    annual_fee: number
+    weighted_expense_ratio: number
+    covered_pct: number
+    unknown: string[]
+    rows: { symbol: string; value: number; expense_ratio: number; annual_fee: number }[]
+    drag: Record<string, { cost: number; cost_pct: number; years: number }>
+  }
+  income: {
+    months: { month: number; amount: number }[]
+    annual_income: number
+    missing_yield: string[]
+    assumption: string
+  }
+}
+
+export type RebalanceTrade = {
+  account_id: number
+  account: string
+  tax_bucket: string
+  action: 'BUY' | 'SELL'
+  symbol: string
+  name?: string
+  asset_class: string
+  amount: number
+  realized_gain: number
+}
+export type Rebalance = {
+  has_target: boolean
+  notes: string[]
+  drift?: {
+    total: number
+    total_drift: number
+    threshold: number
+    breached: boolean
+    rows: { asset_class: string; current: number; target: number; drift: number; dollars: number; breach: boolean }[]
+  }
+  trades?: RebalanceTrade[]
+  unresolved?: { sell: Record<string, number>; buy: Record<string, number> }
+  realized_gains?: number
+  est_tax?: number
+  after?: { total_drift: number }
+  asset_location: {
+    marginal_rate: number
+    note: string
+    suggestions: { symbol: string; account: string; from_bucket: string; to_bucket: string; value: number; est_annual_tax_drag: number; why: string }[]
+  }
+}
+
+export type LotView = {
+  id: number
+  account_id: number
+  symbol: string
+  acquired: string
+  shares: number
+  cost_basis: number
+  value: number
+  gain: number
+  term: 'SHORT' | 'LONG'
+  days_to_long_term: number
+}
+export type HarvestRow = LotView & {
+  account: string
+  loss: number
+  rate: number
+  est_tax_savings: number
+  alternatives: string[]
+  identical_to: string[]
+  wash_conflicts: { account: string; symbol: string; acquired: string; owner: string }[]
+  avoid_buying_until: string
+}
+export type TaxLotReport = {
+  lots: number
+  missing_lots: string[]
+  notes: string[]
+  harvest?: {
+    candidates: HarvestRow[]
+    blocked_by_wash_sale: HarvestRow[]
+    total_loss: number
+    total_est_savings: number
+    note: string
+  }
+  gain_harvest?: {
+    zero_bracket_top: number
+    headroom: number
+    total_gain: number
+    picks: { lot_id: number; symbol: string; shares: number; gain: number }[]
+    note: string
+  }
+  upcoming_long_term?: LotView[]
+}
+export type LotSale = {
+  symbol: string
+  raised: number
+  shortfall: number
+  total_gain: number
+  est_tax: number
+  picks: { lot_id: number; acquired: string; term: string; shares: number; proceeds: number; gain: number; est_tax: number }[]
+}
+
+export type RiskReport = {
+  total: number
+  notes: string[]
+  coverage?: { priced_pct: number; unpriced: string[]; proxied: string[]; cash_pct: number }
+  risk?: {
+    days: number
+    volatility: number
+    max_drawdown: number
+    var_1d: number
+    cvar_1d: number
+    var_1d_dollars: number
+    cvar_1d_dollars: number
+    confidence: number
+    beta: number | null
+  }
+  contribution?: { symbol: string; weight: number; risk_share: number }[]
+  correlation?: Record<string, Record<string, number>>
+  stress: {
+    id: string
+    label: string
+    portfolio_change: number
+    portfolio_return: number
+    benchmark: { stocks: number; bonds: number; bills: number }
+    by_class: Record<string, { return: number; change: number }>
+  }[]
+}
+
+export type CashPlan = {
+  signal: string
+  ladder: {
+    instrument: string
+    amount: number
+    blended_yield: number
+    annual_interest: number
+    next_maturity: string | null
+    rungs: { months: number; amount: number; yield: number; matures_on: string; interest_at_maturity: number }[]
+  }
+  ladder_available: number
+  tax_comparison: {
+    state: string
+    state_rate: number
+    state_rate_known: boolean
+    mmf_after_tax: number
+    tbill_after_tax: number
+    advantage: number
+    winner: 'TBILL' | 'MMF'
+  }
+  i_bond: { annual_purchase_cap: number; verdict: string; min_hold_months: number; early_redemption_penalty: string }
+  emergency_fund: { months: number; essential_monthly: number; target: number; have_cash: number; gap: number }
+  bridge_reserve: { years: number; total: number; per_year: number[]; first_year: number | null; retire_age: number }
+  total_reserve_target: number
+  dca: { amount: number; tranches: number; schedule: { on: string; amount: number }[] } | null
+  dca_active: { amount: number; tranches: number; schedule: { on: string; amount: number }[]; notified: string[] } | null
+  notes: string[]
+}
+
+export type DcfGrid = {
+  symbol: string
+  discounts: number[]
+  rows: { growth: number; values: (number | null)[] }[]
+  base: number | null
+  low: number | null
+  high: number | null
+  price: number | null
+  base_upside: number | null
+  share_of_cells_above_price: number | null
+}
+export type WatchRow = {
+  id: number
+  symbol: string
+  note: string
+  buy_below: number | null
+  upside_alert: number | null
+  price: number | null
+  dcf_value: number | null
+  alerts: string[]
+}
+export type Criterion = { metric: string; op: string; value: number; text?: string; current?: number | null; triggered?: boolean | null }
+export type ThesisRow = {
+  id: number
+  symbol: string
+  thesis: string
+  status: string
+  invalidated_on: string | null
+  criteria: Criterion[]
+  broken: Criterion[]
+}
+
 export const api = {
+  dcf: (sym: string) => req<DcfGrid>(`/research/dcf/${sym}`),
+  watchlist: () => req<WatchRow[]>('/research/watchlist'),
+  addWatch: (b: { symbol: string; note?: string; buy_below?: number | null }) => req<WatchRow>('/research/watchlist', json('POST', b)),
+  deleteWatch: (id: number) => req<null>(`/research/watchlist/${id}`, json('DELETE')),
+  theses: () => req<ThesisRow[]>('/research/theses'),
+  addThesis: (b: { symbol: string; thesis: string; criteria: Criterion[] }) => req<ThesisRow>('/research/theses', json('POST', b)),
+  closeThesis: (id: number) => req<null>(`/research/theses/${id}`, json('DELETE')),
+  cashPlan: () => req<CashPlan>('/planner/cash/plan'),
+  saveDca: (b: { amount: number; tranches: number }) => req<NonNullable<CashPlan['dca_active']>>('/planner/cash/dca', json('POST', b)),
+  clearDca: () => req<null>('/planner/cash/dca', json('DELETE')),
+  risk: () => req<RiskReport>('/portfolio/risk'),
+  taxLots: () => req<TaxLotReport>('/tax-lots'),
+  lotSale: (symbol: string, amount: number) => req<LotSale>(`/tax-lots/sell?symbol=${encodeURIComponent(symbol)}&amount=${amount}`),
+  importLots: (file: File, accountId: number) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('account_id', String(accountId))
+    return req<{ lots: number; symbols: string[]; row_errors: RowError[] }>('/tax-lots/import', { method: 'POST', body: fd })
+  },
+  rebalance: () => req<Rebalance>('/rebalance'),
+  performance: (assume = false) => req<Performance>(`/performance${assume ? '?assume_contributions=1' : ''}`),
+  cashFlows: () => req<CashFlowRow[]>('/cashflows'),
+  addCashFlow: (f: { on: string; amount: number; note?: string }) => req<CashFlowRow>('/cashflows', json('POST', f)),
+  deleteCashFlow: (id: number) => req<null>(`/cashflows/${id}`, json('DELETE')),
   pensions: () => req<Pension[]>('/pensions'),
   savePension: (id: number, edit: PensionEdit) => req<Pension>(`/pensions/${id}`, json('PUT', edit)),
   deletePension: (id: number) => req<null>(`/pensions/${id}`, json('DELETE')),
@@ -590,6 +863,7 @@ export const api = {
   debt: () => req<DebtSummary>('/planner/debt'),
   portfolio: () => req<Portfolio>('/portfolio'),
   xray: () => req<XRay>('/portfolio/xray'),
+  netWorth: () => req<NetWorthSummary>('/networth/summary'),
   profile: () => req<Profile>('/profile'),
   saveProfile: (p: Partial<Profile>) => req<Profile>('/profile', json('PUT', p)),
   fire: (w: FireWhatIf = {}) => {
@@ -658,6 +932,8 @@ export const api = {
     fd.append('allow_duplicate', '1') // the user just reviewed this data
     return req<IngestResult>('/ingest', { method: 'POST', body: fd })
   },
+  importLog: () => req<ImportLogEntry[]>('/ingest/log'),
+  undoImport: (id: number) => req<{ undone: number[] }>(`/ingest/${id}/undo`, json('POST')),
   chatSessions: () => req<ChatSession[]>('/chat/sessions'),
   createChatSession: () => req<ChatSessionFull>('/chat/sessions', json('POST')),
   chatSession: (id: number) => req<ChatSessionFull>(`/chat/sessions/${id}`),
@@ -677,8 +953,10 @@ export const api = {
   symbolDetail: (symbol: string) => req<SymbolDetail>(`/research/symbol/${encodeURIComponent(symbol)}`),
   whatIf: (symbol: string, amount: number) => req<WhatIf>('/research/what-if', json('POST', { symbol, amount })),
   llm: () =>
-    req<{ provider: string; fast_model: string; reasoning_model: string; api_base: string; api_key_set: boolean; providers: string[] }>('/settings/llm'),
-  saveLlm: (b: Record<string, string>) => req('/settings/llm', json('PUT', b)),
+    req<{ provider: string; fast_model: string; reasoning_model: string; api_base: string; token_budget: number; api_key_set: boolean; providers: string[] }>(
+      '/settings/llm',
+    ),
+  saveLlm: (b: Record<string, string | number>) => req('/settings/llm', json('PUT', b)),
   testLlm: () => req<{ ok: boolean; reply?: string }>('/settings/llm/test', json('POST')),
   notif: () => req<{ discord_configured: boolean; smtp_host: string; smtp_to: string; smtp_user: string }>('/settings/notifications'),
   saveNotif: (b: Record<string, string>) => req('/settings/notifications', json('PUT', b)),

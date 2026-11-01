@@ -19,9 +19,31 @@ from models import (
     PlannedEvent,
     ResearchReport,
     ScreenerResult,
+    TaxLot,
 )
 from routes._helpers import get_profile
-from services import early_access, household, hsa, market_data, planner, rmd, roth, scenarios, spending, state_rules, withdrawals, xray
+from services import (
+    cash_backtest,
+    cash_plan,
+    early_access,
+    household,
+    hsa,
+    market_data,
+    networth,
+    performance,
+    planner,
+    rebalance,
+    research_watch,
+    risk,
+    rmd,
+    roth,
+    scenarios,
+    spending,
+    state_rules,
+    tax_lots,
+    withdrawals,
+    xray,
+)
 from services import pension as pension_svc
 from services import quant_engine as qe
 from services import research_pipeline as rp
@@ -295,7 +317,7 @@ TOOLS = [
         "Entered 401(k) plan-menu funds (ticker, name, asset class, expense ratio) for one account.",
         _obj({"account_id": {"type": "integer"}}, ["account_id"]),
     ),
-    ("get_ingestion_log", "Recent file imports: filename, parser, rows, status, message.", _obj({"limit": {"type": "integer"}})),
+    ("get_ingestion_log", "Recent file imports: filename, parser, rows, status (OK/ERROR/UNDONE), message.", _obj({"limit": {"type": "integer"}})),
     (
         "get_data_gaps",
         "Deterministic checklist of missing or suspicious inputs (zero income/expenses/Social Security, no spouse data, accounts without "
@@ -306,6 +328,72 @@ TOOLS = [
     ("get_sector_overview", "Sector relative-strength ranking used by the macro overlay.", _obj({})),
     ("get_notification_status", "Whether Discord/SMTP alert channels are configured (never secrets) and background job status.", _obj({})),
     ("get_net_worth_history", "Net-worth snapshots over time.", _obj({"limit": {"type": "integer"}})),
+    (
+        "get_net_worth_summary",
+        "Net-worth series with asset/liability breakdown, milestones reached and next, and monthly plan-vs-actual drift "
+        "(deterministic projection from the first snapshot).",
+        _obj({}),
+    ),
+    (
+        "get_performance",
+        "Portfolio time-weighted and money-weighted return, comparison with SPY and the target allocation, fee drag from expense ratios, "
+        "and a monthly dividend/interest income calendar (deterministic).",
+        _obj({"assume_contributions": {"type": "boolean"}}),
+    ),
+    (
+        "get_rebalance_plan",
+        "Drift from the target allocation, a self-funding trade list that respects 401(k) menus and minimizes realized gains in taxable, "
+        "estimated tax on those gains, and asset-location suggestions (deterministic).",
+        _obj({"threshold": {"type": "number"}}),
+    ),
+    (
+        "get_cash_plan",
+        "Cash engine details: Treasury/CD ladder, T-bill vs money-market after-tax comparison for the user's state, I-bond cap, emergency fund "
+        "and first-years-of-retirement bridge reserve from the withdrawal simulator, and the DCA schedule (deterministic).",
+        _obj({"ladder_amount": {"type": "number"}, "cd_yield": {"type": "number"}, "ibond_rate": {"type": "number"}}),
+    ),
+    (
+        "get_cash_backtest",
+        "Historical backtest (annual Damodaran data) of the cash-deployment rule vs buy-and-hold, naive DCA and T-bills (deterministic).",
+        _obj({}),
+    ),
+    (
+        "get_dcf_sensitivity",
+        "Per-share DCF value grid over growth x discount rate for a symbol (deterministic); use the range, not one number.",
+        _obj({"symbol": {"type": "string"}}, ["symbol"]),
+    ),
+    (
+        "get_insider_activity",
+        "Open-market insider buying/selling from recent Form 4 filings over the last 90 days, net value and a BUYING/SELLING/NEUTRAL signal (deterministic).",
+        _obj({"symbol": {"type": "string"}}, ["symbol"]),
+    ),
+    (
+        "get_watchlist",
+        "Watchlist with price, base DCF value and any valuation alerts that are firing (deterministic).",
+        _obj({}),
+    ),
+    (
+        "get_theses",
+        "Investment theses with their invalidation criteria checked against current data; 'broken' lists the criteria that have triggered.",
+        _obj({}),
+    ),
+    (
+        "get_risk_report",
+        "Portfolio risk from price history at today's weights: volatility, max drawdown, 1-day VaR/CVaR, beta, correlations, "
+        "each position's share of risk, plus historical stress tests (2000-02, 2008, 2022, 1973-74) applied to actual holdings (deterministic).",
+        _obj({}),
+    ),
+    (
+        "get_tax_lot_report",
+        "Lot-level tax report: tax-loss harvest candidates with estimated savings and wash-sale conflicts (any household account), "
+        "0% long-term gain-harvesting headroom, and short-term lots about to turn long-term (deterministic, federal only).",
+        _obj({}),
+    ),
+    (
+        "suggest_lot_sale",
+        "Which specific tax lots to sell to raise a dollar amount of one symbol with the least tax (losses first), with estimated gain and tax.",
+        _obj({"symbol": {"type": "string"}, "amount": {"type": "number"}, "account_id": {"type": "integer"}}, ["symbol", "amount"]),
+    ),
     (
         "grade_401k_menu",
         "Grade an account's plan menu by expense ratio and suggest cheaper swaps (needs menu entries).",
@@ -662,7 +750,15 @@ def _plan_menu(a: dict) -> list[dict]:
 def _ingest_log(a: dict) -> list[dict]:
     rows = db.session().query(IngestionLog).order_by(IngestionLog.id.desc()).limit(min(int(a.get("limit") or 10), 50))
     return [
-        {"filename": r.filename, "parser": r.parser, "rows": r.rows_parsed, "status": r.status, "message": r.message, "at": r.created_at.isoformat()}
+        {
+            "filename": r.filename,
+            "parser": r.parser,
+            "rows": r.rows_parsed,
+            "status": r.status,
+            "message": r.message,
+            "at": r.created_at.isoformat(),
+            "undone": r.undone_at is not None,
+        }
         for r in rows
     ]
 
@@ -792,8 +888,44 @@ HANDLERS = {
     "get_sector_overview": lambda a: market_data.sector_strength(),
     "get_notification_status": lambda a: _notifications(),
     "get_net_worth_history": _history,
+    "get_net_worth_summary": lambda a: networth.summary(db.session(), get_profile()),
+    "get_performance": lambda a: performance.report(
+        db.session(), get_profile(), market_data.get_closes, market_data.get_fundamentals, assume_contributions=bool(a.get("assume_contributions"))
+    ),
+    "get_rebalance_plan": lambda a: rebalance.report(db.session(), get_profile(), float(a.get("threshold") or rebalance.DEFAULT_THRESHOLD)),
+    "get_cash_plan": lambda a: _cash_plan(a),
+    "get_cash_backtest": lambda a: cash_backtest.run(),
+    "get_dcf_sensitivity": lambda a: (
+        research_watch.dcf_for(str(a.get("symbol", "")).upper()) or {"error": "no positive free cash flow / share count / growth to project"}
+    ),
+    "get_watchlist": lambda a: research_watch.watchlist_view(db.session()),
+    "get_theses": lambda a: research_watch.theses_view(db.session()),
+    "get_insider_activity": lambda a: research_watch.insiders_for(str(a.get("symbol", "")).upper(), current_app.config["EDGAR_IDENTITY"]),
+    "get_risk_report": lambda a: risk.report(db.session(), market_data.get_closes),
+    "get_tax_lot_report": lambda a: tax_lots.report(db.session(), get_profile()),
+    "suggest_lot_sale": lambda a: _suggest_lot_sale(a),
     "grade_401k_menu": _menu,
 }
+
+
+def _cash_plan(a: dict) -> dict:
+    p = get_profile()
+    market, _ = market_data.market_inputs(current_app.config["FRED_API_KEY"])
+    mmf = p.current_money_market_yield if p.money_market_yield_override else max(market.tbill_3m - 0.0015, 0)
+    opts = {k: float(a[k]) for k in ("ladder_amount", "cd_yield", "ibond_rate") if a.get(k) is not None}
+    return cash_plan.build(db.session(), p, market, mmf, opts)
+
+
+def _suggest_lot_sale(a: dict) -> dict:
+    from datetime import date
+
+    s = db.session()
+    accounts = {x.id: x for x in s.query(Account).all()}
+    prices = {(h.account_id, h.symbol): h.current_price for h in s.query(Holding).all() if h.current_price}
+    lots = s.query(TaxLot).all()
+    today = date.today()
+    views = [tax_lots.lot_view(lot, prices, today) for lot in lots]
+    return tax_lots.suggest_sale(views, str(a["symbol"]), float(a["amount"]), get_profile(), today, lots, accounts, a.get("account_id"))
 
 
 def dispatch(name: str, args: dict) -> str:

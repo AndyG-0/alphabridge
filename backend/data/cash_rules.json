@@ -1,0 +1,42 @@
+{
+  "retrieved_on": "2026-10-31",
+  "notes": "Planning rules for the cash engine. Yields are never stored here: the T-bill and 10-year inputs come from market data, and CD / I-bond rates are entered by the user because they change on offer dates.",
+  "treasury_state_exempt": {
+    "value": true,
+    "source_url": "https://www.treasurydirect.gov/tax-information/",
+    "note": "Interest on Treasury bills, notes, bonds and I-bonds is federally taxable and exempt from state and local income tax (31 U.S.C. 3124)."
+  },
+  "money_market_treasury_share_default": 0.0,
+  "money_market_note": "A government money-market fund passes state-exempt interest through only for the share held in direct Treasury obligations (many states also require a minimum share). The default of 0 is conservative; enter your fund's share from its annual state-tax-information notice.",
+  "ladder": {
+    "default_rungs_months": [3, 6, 9, 12],
+    "max_rungs": 12,
+    "curve_note": "Between the 3-month T-bill and the 10-year yield the curve is linearly interpolated by maturity. This is a planning approximation; enter real auction yields to override.",
+    "source_url": "https://www.treasurydirect.gov/marketable-securities/treasury-bills/"
+  },
+  "cd": {
+    "early_withdrawal_penalty_months_of_interest": 3,
+    "note": "Typical penalty for CDs of one year or less; actual terms vary by bank."
+  },
+  "i_bond": {
+    "annual_purchase_limit_per_person": 10000,
+    "min_hold_months": 12,
+    "penalty_months_of_interest_before_60_months": 3,
+    "source_url": "https://www.treasurydirect.gov/savings-bonds/i-bonds/"
+  },
+  "reserve": {
+    "sequence_years": 2,
+    "note": "Cash covering the first N retirement years of net withdrawals so a bad early market never forces stock sales (sequence-of-returns buffer)."
+  },
+  "dca": {
+    "interval_days": 30,
+    "default_tranches": 3,
+    "reminder_lead_days": 0
+  },
+  "backtest": {
+    "window_years": 10,
+    "naive_dca_fraction": 0.25,
+    "first_year": 1930,
+    "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/histretSP.xls"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "_source": "Project choice of broad-market index ETFs as stand-ins for each asset class; returns come from cached Yahoo Finance prices (market_data.get_closes). Not a performance claim.",
+  "_retrieved_on": "2026-10-31",
+  "market": "SPY",
+  "class_proxies": {
+    "US_EQUITY": "VTI",
+    "INTL_EQUITY": "VXUS",
+    "SECTOR_ETF": "VTI",
+    "INDIVIDUAL_STOCK": "VTI",
+    "BOND": "BND",
+    "MONEY_MARKET": null
+  },
+  "trading_days_per_year": 252
+}

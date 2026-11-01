@@ -10,6 +10,7 @@ import db
 from models import Account, ResearchReport, ScreenerResult
 from services import market_data as md
 from services import quant_engine as qe
+from services import research_extras as rx
 
 # Compact default universe; extend via UNIVERSE env / settings later.
 DEFAULT_UNIVERSE = [
@@ -298,8 +299,38 @@ THESIS_SYSTEM = (
 )
 
 
-def deep_dive(symbol: str, trigger: str, fred_key: str, edgar_identity: str, metrics: dict | None = None, llm=None, edgar=None) -> ResearchReport:
-    """Stage 3. `llm` / `edgar` injectable for tests."""
+def _research_extras(symbol: str, edgar_identity: str, insiders=None) -> dict:
+    """Deterministic add-ons for the thesis input. Every provider failure degrades to 'not available', never to an error."""
+    out: dict = {}
+    try:
+        f = md.get_fundamentals(symbol)
+        closes = md.get_closes(symbol, "1y")
+        out["dcf_sensitivity"] = rx.dcf_sensitivity(
+            f.get("free_cash_flow"), f.get("shares_outstanding"), f.get("revenue_growth"), closes[-1] if closes else None
+        )
+    except Exception:
+        out["dcf_sensitivity"] = None
+    try:
+        out["insider_activity"] = rx.insider_signal((insiders or md.insider_transactions)(symbol, edgar_identity))
+    except Exception:
+        out["insider_activity"] = None
+    return out
+
+
+def deep_dive(
+    symbol: str,
+    trigger: str,
+    fred_key: str,
+    edgar_identity: str,
+    metrics: dict | None = None,
+    llm=None,
+    edgar=None,
+    insiders=None,
+    budget: rx.TokenBudget | None = None,
+    force: bool = False,
+) -> ResearchReport:
+    """Stage 3. `llm` / `edgar` / `insiders` injectable for tests. Identical inputs reuse the saved report (unless `force`);
+    `budget` is shared by all dives in one run and a per-run token cap from LLMConfig trims the long excerpts."""
     symbol = symbol.upper()
     if metrics is None:
         metrics = screen_one(md.get_fundamentals(symbol), md.get_closes(symbol, "2y")) or {}
@@ -321,11 +352,26 @@ def deep_dive(symbol: str, trigger: str, fred_key: str, edgar_identity: str, met
         "risk_factors_excerpt": edgar_ctx["risk_factors"],
         "mdna_excerpt": edgar_ctx["mdna"],
         "financial_statements": edgar_ctx["financials"],
+        **_research_extras(symbol, edgar_identity, insiders),
     }
+    cap = _token_cap()
+    if budget is not None and budget.remaining() is not None:
+        room = max((budget.remaining() or 0) - THESIS_OUTPUT_TOKENS, 0)
+        cap = min(cap, room) if cap else room
+    payload, truncated = rx.fit_to_budget(payload, cap)
+    digest = rx.input_hash(payload)
+    if not force:
+        cached = s.query(ResearchReport).filter_by(symbol=symbol, input_hash=digest).order_by(ResearchReport.created_at.desc()).first()
+        if cached is not None:
+            return cached
+    if budget is not None:
+        budget.spend(rx.est_tokens(json.dumps(payload, default=str)) + THESIS_OUTPUT_TOKENS)
     thesis: Thesis = llm(THESIS_SYSTEM, json.dumps(payload, default=str))
     action = thesis.recommended_action if thesis.recommended_action in ("BUY_SATELLITE", "WATCHLIST", "AVOID", "HOLD_MMF") else "WATCHLIST"
     if warns and action == "BUY_SATELLITE":
         action = "WATCHLIST"  # deterministic guardrail overrides the model
+    narrative = "\n".join([thesis.bull_case_md, thesis.bear_case_md, *thesis.red_flags])
+    unverified = rx.verify_narrative_numbers(narrative, payload)
     rep = ResearchReport(
         symbol=symbol,
         trigger_source=trigger,
@@ -338,11 +384,31 @@ def deep_dive(symbol: str, trigger: str, fred_key: str, edgar_identity: str, met
         sec_filing_citations_json=[{**edgar_ctx["citation"], **c.model_dump()} for c in thesis.citations],
         portfolio_fit_notes=" ".join(warns) or "No concentration issues detected.",
         recommended_action=action,
-        metrics_json={**metrics, "red_flags": thesis.red_flags},
+        metrics_json={
+            **metrics,
+            "red_flags": thesis.red_flags,
+            "unverified_numbers": unverified,
+            "input_truncated": truncated,
+            "dcf_sensitivity": payload.get("dcf_sensitivity"),
+            "insider_activity": payload.get("insider_activity"),
+        },
+        input_hash=digest,
     )
     s.add(rep)
     s.commit()
     return rep
+
+
+THESIS_OUTPUT_TOKENS = 1500
+
+
+def _token_cap() -> int | None:
+    from services.llm_router import get_config
+
+    try:
+        return get_config().token_budget or None
+    except Exception:
+        return None
 
 
 def _limit() -> float:

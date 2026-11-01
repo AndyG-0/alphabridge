@@ -57,6 +57,8 @@ class UserProfile(Base):
     ltc_start_age: Mapped[float] = mapped_column(Float, default=85)
     guardrails_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     spending_model: Mapped[dict] = mapped_column(JSON, default=dict)  # services/spending.py SpendingModel; {} = flat spending
+    target_allocation: Mapped[dict] = mapped_column(JSON, default=dict)  # {asset_class: weight} summing to 1; {} = none set (performance, rebalancing)
+    dca_plan: Mapped[dict] = mapped_column(JSON, default=dict)  # {amount, tranches, schedule: [{on, amount}], notified: [on]}; {} = none
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
 
     @property
@@ -116,7 +118,23 @@ class Holding(Base):
     asset_class: Mapped[str] = mapped_column(String(40), default="US_EQUITY")
     proxy_ticker: Mapped[str | None] = mapped_column(String(20), nullable=True)
     last_updated: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    currency: Mapped[str] = mapped_column(String(3), default="USD")  # statement currency; amounts are stored in USD
+    fx_rate: Mapped[float] = mapped_column(Float, default=1.0)  # USD per unit of `currency` at import
     account = relationship("Account", back_populates="holdings")
+
+
+class TaxLot(Base):
+    """One purchase lot (from a lot-level cost-basis export). Needed for holding periods, wash-sale windows and choosing which lot to sell."""
+
+    __tablename__ = "tax_lot"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("account.id"))
+    symbol: Mapped[str] = mapped_column(String(40))
+    acquired: Mapped[date] = mapped_column(Date)
+    shares: Mapped[float] = mapped_column(Float)
+    cost_basis_total: Mapped[float] = mapped_column(Float, default=0)
+    current_value: Mapped[float] = mapped_column(Float, default=0)  # from the export; refreshed from the holding's price when one exists
+    source: Mapped[str] = mapped_column(String(40), default="fidelity_lots")
 
 
 class IngestionLog(Base):
@@ -129,6 +147,11 @@ class IngestionLog(Base):
     status: Mapped[str] = mapped_column(String(20), default="OK")
     message: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    content_hash: Mapped[str] = mapped_column(String(64), default="")  # hash of the imported rows (idempotency + audit)
+    batch_id: Mapped[str] = mapped_column(String(32), default="")  # one upload can touch several accounts
+    before: Mapped[list | None] = mapped_column(JSON, nullable=True)  # the account's holdings before this import (for undo)
+    created_account: Mapped[bool] = mapped_column(Boolean, default=False)  # import created the account, so undo removes it
+    undone_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class NetWorthSnapshot(Base):
@@ -140,6 +163,17 @@ class NetWorthSnapshot(Base):
     satellite: Mapped[float] = mapped_column(Float, default=0)
     dry_powder: Mapped[float] = mapped_column(Float, default=0)
     liabilities: Mapped[float] = mapped_column(Float, default=0)
+    breakdown: Mapped[dict] = mapped_column(JSON, default=dict)  # {"assets": {tax_bucket: $}, "liabilities": {kind: $}}
+
+
+class CashFlow(Base):
+    """External money in (+) or out (-) of the invested portfolio; needed to separate your contributions from market returns (TWR/MWR)."""
+
+    __tablename__ = "cash_flow"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    on: Mapped[date] = mapped_column(Date)
+    amount: Mapped[float] = mapped_column(Float)
+    note: Mapped[str] = mapped_column(String(200), default="")
 
 
 class Scenario(Base):
@@ -279,6 +313,7 @@ class ResearchReport(Base):
     portfolio_fit_notes: Mapped[str] = mapped_column(Text, default="")
     recommended_action: Mapped[str] = mapped_column(String(20), default="WATCHLIST")
     metrics_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    input_hash: Mapped[str] = mapped_column(String(64), default="")  # sha256 of the LLM input; same symbol + hash reuses the report
 
 
 class LLMConfig(Base):
@@ -289,6 +324,7 @@ class LLMConfig(Base):
     reasoning_model: Mapped[str] = mapped_column(String(120), default="anthropic/claude-sonnet-5-5")
     api_key_encrypted: Mapped[str] = mapped_column(Text, default="")
     api_base: Mapped[str] = mapped_column(String(300), default="")
+    token_budget: Mapped[int] = mapped_column(Integer, default=0)  # estimated tokens per research run; 0 = unlimited
 
 
 class NotificationConfig(Base):
@@ -339,3 +375,27 @@ class RunSnapshot(Base):
 
     def to_dict(self) -> dict:
         return {"id": self.id, "created_at": self.created_at.isoformat(), "metrics": self.metrics, "assumptions": self.assumptions}
+
+
+class WatchlistItem(Base):
+    __tablename__ = "watchlist_item"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(20), unique=True)
+    added_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    note: Mapped[str] = mapped_column(String(500), default="")
+    buy_below: Mapped[float | None] = mapped_column(Float, nullable=True)
+    upside_alert: Mapped[float | None] = mapped_column(Float, nullable=True)  # alert when base DCF is this far above price
+    last_alerted_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+
+class ThesisRecord(Base):
+    """Why a position/watch is held, and the deterministic conditions that would invalidate it."""
+
+    __tablename__ = "thesis_record"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    thesis: Mapped[str] = mapped_column(Text, default="")
+    criteria_json: Mapped[list] = mapped_column(JSON, default=list)  # [{metric, op, value, text}]
+    status: Mapped[str] = mapped_column(String(12), default="ACTIVE")  # ACTIVE | INVALIDATED | CLOSED
+    invalidated_on: Mapped[date | None] = mapped_column(Date, nullable=True)

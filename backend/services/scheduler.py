@@ -72,12 +72,102 @@ def daily_checks(app):
                 )
             except RuntimeError as e:
                 log.warning("notify failed: %s", e)
+        _rebalance_alert(s, p)
+        _dca_reminder(s, p)
+        _research_alerts(s)
+
+
+def _rebalance_alert(s, profile):
+    """Notify when any asset class drifts past the threshold from the target allocation (no-op without a target)."""
+    from models import Account
+    from services import notifier, rebalance
+
+    if not profile.target_allocation:
+        return
+    d = rebalance.drift(rebalance.class_values([h for a in s.query(Account).all() for h in a.holdings]), profile.target_allocation)
+    if not d["breached"]:
+        return
+    rows = [r for r in d["rows"] if r["breach"]]
+    try:
+        notifier.notify(
+            "Rebalance needed",
+            "Allocation has drifted past your threshold.",
+            "warn",
+            [(r["asset_class"], f"{r['current']:.0%} vs target {r['target']:.0%}") for r in rows],
+        )
+    except RuntimeError as e:
+        log.warning("notify failed: %s", e)
+
+
+def _dca_reminder(s, profile):
+    """One reminder per DCA tranche that has come due; remembered so it isn't repeated."""
+    from datetime import date
+
+    from services import ladder, notifier
+
+    plan = profile.dca_plan or None
+    due = ladder.due_tranches(plan, date.today())
+    if not plan or not due:
+        return
+    try:
+        notifier.notify(
+            "DCA tranche due",
+            "A scheduled deployment from cash is due.",
+            "buy",
+            [(t["on"], f"${t['amount']:,.0f}") for t in due],
+        )
+    except RuntimeError as e:
+        log.warning("notify failed: %s", e)
+        return
+    profile.dca_plan = {**plan, "notified": [*plan.get("notified", []), *[t["on"] for t in due]]}
+    s.commit()
+
+
+def _research_alerts(s):
+    """Valuation alerts for the watchlist (once a day per symbol) and thesis invalidation (flagged once, then stays flagged)."""
+    from datetime import date
+
+    from models import ThesisRecord, WatchlistItem
+    from services import notifier, research_watch
+
+    today = date.today()
+    fields: list[tuple[str, str]] = []
+    for row in research_watch.watchlist_view(s):
+        w = s.get(WatchlistItem, row["id"])
+        if row["alerts"] and w is not None and w.last_alerted_on != today:
+            fields.extend((row["symbol"], a) for a in row["alerts"])
+            w.last_alerted_on = today
+    for v in research_watch.theses_view(s):
+        t = s.get(ThesisRecord, v["id"])
+        if v["broken"] and t is not None and t.status == "ACTIVE":
+            t.status, t.invalidated_on = "INVALIDATED", today
+            fields.extend((v["symbol"], f"Thesis invalidated: {c.get('text') or c['metric']} ({c['current']})") for c in v["broken"])
+    if not fields:
+        return
+    try:
+        notifier.notify("Research alerts", "Watchlist valuation or thesis conditions changed.", "warn", fields)
+    except RuntimeError as e:
+        log.warning("notify failed: %s", e)
+    s.commit()
+
+
+@_tracked("net_worth_snapshot")
+def net_worth_snapshot(app):
+    """Daily snapshot so the history has points even when no file is imported (idempotent per UTC day)."""
+    with app.app_context():
+        import db
+        from services import ingestion
+
+        s = db.session()
+        ingestion.snapshot_net_worth(s)
+        s.commit()
 
 
 def start_scheduler(app) -> BackgroundScheduler:
     sched = BackgroundScheduler(timezone="UTC")
     sched.add_job(weekly_screen, CronTrigger(day_of_week="sun", hour=14), args=[app], id="weekly_screen", replace_existing=True)
     sched.add_job(daily_checks, CronTrigger(hour=21, minute=30, day_of_week="mon-fri"), args=[app], id="daily_checks", replace_existing=True)
+    sched.add_job(net_worth_snapshot, CronTrigger(hour=22, minute=0), args=[app], id="net_worth_snapshot", replace_existing=True)
     sched.start()
     app.extensions["scheduler"] = sched
     return sched

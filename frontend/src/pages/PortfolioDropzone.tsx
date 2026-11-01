@@ -1,8 +1,23 @@
 import { Trash2, Upload } from 'lucide-react'
 import { useState } from 'react'
-import { api, type Account, type DuplicateDiff, type Holding, type IngestPreview, type Institution, type Owner, type Pension } from '../api/client'
+import {
+  api,
+  type Account,
+  type DuplicateDiff,
+  type Holding,
+  type IngestPreview,
+  type Institution,
+  type Owner,
+  type Pension,
+  type RowError,
+} from '../api/client'
 import { Badge, Button, Card, Err, Input, usd } from '../components/ui'
 import { useAsync } from '../hooks'
+import ImportHistoryCard from './ImportHistoryCard'
+import PerformanceCard from './PerformanceCard'
+import RebalanceCard from './RebalanceCard'
+import RiskCard from './RiskCard'
+import TaxLotsCard from './TaxLotsCard'
 import XRayCard from './XRayCard'
 
 function MenuGradeCard({ account }: { account: Account }) {
@@ -341,6 +356,8 @@ export default function PortfolioDropzone() {
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState('')
   const [msg, setMsg] = useState('')
+  const [logVersion, setLogVersion] = useState(0)
+  const [rowErrors, setRowErrors] = useState<RowError[]>([])
   const [err, setErr] = useState<unknown>(null)
   const [busy, setBusy] = useState(false)
   const [over, setOver] = useState(false)
@@ -361,6 +378,7 @@ export default function PortfolioDropzone() {
     setBusy(true)
     setErr(null)
     setMsg('')
+    setRowErrors([])
     setDup(null)
     setAskOwner(null)
     try {
@@ -374,7 +392,10 @@ export default function PortfolioDropzone() {
         pens.reload()
         return
       }
-      setMsg(`Imported ${r.rows} holdings (${r.parser}).`)
+      const same = r.accounts?.length && r.unchanged?.length === r.accounts.length
+      setMsg(same ? 'Nothing changed: these holdings were already imported.' : `Imported ${r.rows} holdings (${r.parser}).`)
+      setRowErrors(r.row_errors ?? [])
+      setLogVersion((v) => v + 1)
       pf.reload()
       un.reload()
     } catch (e) {
@@ -456,6 +477,10 @@ export default function PortfolioDropzone() {
 
   return (
     <div className="space-y-4">
+      <PerformanceCard />
+      <RiskCard />
+      <RebalanceCard />
+      <TaxLotsCard />
       <XRayCard />
       <Card title="Statement dropzone">
         <div className="mb-3 grid gap-3 md:grid-cols-3">
@@ -568,6 +593,15 @@ export default function PortfolioDropzone() {
           </div>
         )}
         {msg && <p className="mt-2 text-sm text-emerald-400">{msg}</p>}
+        {rowErrors.length > 0 && (
+          <ul className="mt-2 space-y-1 text-xs">
+            {rowErrors.map((e) => (
+              <li key={`${e.line}-${e.symbol}`} className={e.level === 'error' ? 'text-red-400' : 'text-amber-300'}>
+                Line {e.line} ({e.symbol}): {e.error}
+              </li>
+            ))}
+          </ul>
+        )}
         <Err error={err} />
       </Card>
 
@@ -600,6 +634,8 @@ export default function PortfolioDropzone() {
         .map((a) => (
           <MenuGradeCard key={a.id} account={a} />
         ))}
+
+      <ImportHistoryCard version={logVersion} onChanged={() => pf.reload()} />
 
       {(['SELF', 'SPOUSE', 'JOINT'] as Owner[]).map((o) => {
         const accts = pf.data?.accounts.filter((a) => a.owner === o) ?? []
