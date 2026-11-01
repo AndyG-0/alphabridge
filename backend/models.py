@@ -122,6 +122,20 @@ class Holding(Base):
     account = relationship("Account", back_populates="holdings")
 
 
+class TaxLot(Base):
+    """One purchase lot (from a lot-level cost-basis export). Needed for holding periods, wash-sale windows and choosing which lot to sell."""
+
+    __tablename__ = "tax_lot"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    account_id: Mapped[int] = mapped_column(ForeignKey("account.id"))
+    symbol: Mapped[str] = mapped_column(String(40))
+    acquired: Mapped[date] = mapped_column(Date)
+    shares: Mapped[float] = mapped_column(Float)
+    cost_basis_total: Mapped[float] = mapped_column(Float, default=0)
+    current_value: Mapped[float] = mapped_column(Float, default=0)  # from the export; refreshed from the holding's price when one exists
+    source: Mapped[str] = mapped_column(String(40), default="fidelity_lots")
+
+
 class IngestionLog(Base):
     __tablename__ = "ingestion_log"
     id: Mapped[int] = mapped_column(primary_key=True)

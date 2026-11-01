@@ -5,11 +5,11 @@ from flask import Blueprint, jsonify, request
 from pydantic import BaseModel, Field, field_validator
 
 import db
-from models import Account, AllowedPlanMenu, CashFlow, Holding, IngestionLog, Liability
+from models import Account, AllowedPlanMenu, CashFlow, Holding, IngestionLog, Liability, TaxLot
 from routes._helpers import get_profile
 from schemas import AccountIn, ConfirmedIngest, PlanMenuItemIn, ProfileIn, ProxyMapIn
 from security import safe_filename, validate_upload
-from services import corporate_actions, doc_reader, ingestion, institutions, market_data, networth, performance, rebalance, xray
+from services import corporate_actions, doc_reader, ingestion, institutions, market_data, networth, performance, rebalance, tax_lots, xray
 
 bp = Blueprint("portfolio", __name__, url_prefix="/api")
 
@@ -184,7 +184,10 @@ def ingest():
             elif low.endswith(doc_reader.IMAGE_EXTS):
                 result = ingestion.parse_image(data)
             else:
-                result = ingestion.parse_csv(data.decode("utf-8-sig", errors="replace"))
+                text = data.decode("utf-8-sig", errors="replace")
+                if ingestion.is_lot_export(text):
+                    return jsonify(error="This is a lot-level cost-basis export. Use 'Import tax lots' so it isn't read as positions."), 422
+                result = ingestion.parse_csv(text)
     except Exception as e:
         s = db.session()
         s.add(IngestionLog(filename=name, account_id=account_id, status="ERROR", message=str(e)[:500]))
@@ -384,6 +387,59 @@ def performance_report(assume: bool) -> dict:
 @bp.get("/performance")
 def performance_get():
     return jsonify(performance_report(request.args.get("assume_contributions") in ("1", "true")))
+
+
+def _lot_context(s):
+    from datetime import date as _date
+
+    today = _date.today()
+    accounts = {a.id: a for a in s.query(Account).all()}
+    prices = {(h.account_id, h.symbol): h.current_price for h in s.query(Holding).all() if h.current_price}
+    lots = s.query(TaxLot).order_by(TaxLot.symbol, TaxLot.acquired).all()
+    return today, accounts, lots, [tax_lots.lot_view(lot, prices, today) for lot in lots]
+
+
+@bp.get("/tax-lots")
+def tax_lots_report():
+    return jsonify(tax_lots.report(db.session(), get_profile()))
+
+
+@bp.get("/tax-lots/list")
+def tax_lots_list():
+    _, accounts, _, views = _lot_context(db.session())
+    return jsonify([v | {"account": accounts[v["account_id"]].name} for v in views])
+
+
+@bp.get("/tax-lots/sell")
+def tax_lots_sell():
+    symbol = (request.args.get("symbol") or "").strip()
+    try:
+        amount = float(request.args.get("amount", ""))
+    except ValueError:
+        return jsonify({"error": "amount (dollars) is required"}), 400
+    if not symbol or amount <= 0:
+        return jsonify({"error": "symbol and a positive amount are required"}), 400
+    today, accounts, lots, views = _lot_context(db.session())
+    return jsonify(tax_lots.suggest_sale(views, symbol, amount, get_profile(), today, lots, accounts, request.args.get("account_id", type=int)))
+
+
+@bp.post("/tax-lots/import")
+def tax_lots_import():
+    f = request.files.get("file")
+    account_id = request.form.get("account_id", type=int)
+    if not f or account_id is None:
+        return jsonify(error="file and account_id are required"), 400
+    s = db.session()
+    if s.get(Account, account_id) is None:
+        return jsonify(error="unknown account"), 404
+    name = safe_filename(f.filename or "lots.csv")
+    data = f.read()
+    if bad := validate_upload(name, data):
+        return jsonify(error=bad), 415
+    parsed = ingestion.parse_lots(data.decode("utf-8-sig", errors="replace"))
+    if not parsed.rows:
+        return jsonify(error="No usable lots found.", row_errors=parsed.row_errors, warnings=parsed.warnings), 422
+    return jsonify(ingestion.apply_lots(s, parsed, account_id)), 201
 
 
 @bp.get("/rebalance")

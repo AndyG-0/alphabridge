@@ -10,7 +10,7 @@ from datetime import date
 from pathlib import Path
 
 from models import Account, AllowedPlanMenu, Holding
-from services import tax
+from services import tax, tax_lots
 
 _DATA = Path(__file__).resolve().parent.parent / "data"
 MONEY_MARKET = "MONEY_MARKET"
@@ -146,9 +146,7 @@ def tax_cost(gains: float, profile) -> float:
     if gains <= 0:
         return 0.0
     y = _year()
-    status = profile.tax_filing_status
-    ordinary_taxable = max((profile.annual_income or 0) - tax.standard_deduction(status, y), 0.0)
-    return tax.ltcg_tax(gains, ordinary_taxable, status, y)
+    return tax.ltcg_tax(gains, tax_lots.ordinary_taxable(profile, y), profile.tax_filing_status, y)
 
 
 def post_trade_values(values: dict[str, float], trades: list[dict]) -> dict[str, float]:
@@ -167,10 +165,7 @@ def asset_location(accounts: list[Account], profile) -> dict:
     for a in accounts:
         bucket_value[a.tax_bucket] = bucket_value.get(a.tax_bucket, 0.0) + sum(h.market_value for h in a.holdings)
     y = _year()
-    status = profile.tax_filing_status
-    ordinary_taxable = max((profile.annual_income or 0) - tax.standard_deduction(status, y), 0.0)
-    marginal = tax.ordinary_tax(ordinary_taxable + 1000, status, y)[0] - tax.ordinary_tax(ordinary_taxable, status, y)[0]
-    marginal /= 1000
+    marginal = tax_lots.marginal_ordinary_rate(tax_lots.ordinary_taxable(profile, y), profile.tax_filing_status, y)
     suggestions = []
     for a in accounts:
         if a.tax_bucket == "CASH_MMF":

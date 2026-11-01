@@ -19,6 +19,7 @@ from models import (
     PlannedEvent,
     ResearchReport,
     ScreenerResult,
+    TaxLot,
 )
 from routes._helpers import get_profile
 from services import (
@@ -35,6 +36,7 @@ from services import (
     scenarios,
     spending,
     state_rules,
+    tax_lots,
     withdrawals,
     xray,
 )
@@ -339,6 +341,17 @@ TOOLS = [
         "Drift from the target allocation, a self-funding trade list that respects 401(k) menus and minimizes realized gains in taxable, "
         "estimated tax on those gains, and asset-location suggestions (deterministic).",
         _obj({"threshold": {"type": "number"}}),
+    ),
+    (
+        "get_tax_lot_report",
+        "Lot-level tax report: tax-loss harvest candidates with estimated savings and wash-sale conflicts (any household account), "
+        "0% long-term gain-harvesting headroom, and short-term lots about to turn long-term (deterministic, federal only).",
+        _obj({}),
+    ),
+    (
+        "suggest_lot_sale",
+        "Which specific tax lots to sell to raise a dollar amount of one symbol with the least tax (losses first), with estimated gain and tax.",
+        _obj({"symbol": {"type": "string"}, "amount": {"type": "number"}, "account_id": {"type": "integer"}}, ["symbol", "amount"]),
     ),
     (
         "grade_401k_menu",
@@ -839,8 +852,22 @@ HANDLERS = {
         db.session(), get_profile(), market_data.get_closes, market_data.get_fundamentals, assume_contributions=bool(a.get("assume_contributions"))
     ),
     "get_rebalance_plan": lambda a: rebalance.report(db.session(), get_profile(), float(a.get("threshold") or rebalance.DEFAULT_THRESHOLD)),
+    "get_tax_lot_report": lambda a: tax_lots.report(db.session(), get_profile()),
+    "suggest_lot_sale": lambda a: _suggest_lot_sale(a),
     "grade_401k_menu": _menu,
 }
+
+
+def _suggest_lot_sale(a: dict) -> dict:
+    from datetime import date
+
+    s = db.session()
+    accounts = {x.id: x for x in s.query(Account).all()}
+    prices = {(h.account_id, h.symbol): h.current_price for h in s.query(Holding).all() if h.current_price}
+    lots = s.query(TaxLot).all()
+    today = date.today()
+    views = [tax_lots.lot_view(lot, prices, today) for lot in lots]
+    return tax_lots.suggest_sale(views, str(a["symbol"]), float(a["amount"]), get_profile(), today, lots, accounts, a.get("account_id"))
 
 
 def dispatch(name: str, args: dict) -> str:

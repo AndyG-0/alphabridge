@@ -12,7 +12,7 @@ from datetime import UTC, date, datetime
 from pydantic import BaseModel
 
 import db
-from models import Account, Holding, IngestionLog, Liability, NetWorthSnapshot, Pension
+from models import Account, Holding, IngestionLog, Liability, NetWorthSnapshot, Pension, TaxLot
 from services import doc_reader, institutions, validate_parse
 
 MMF_SYMBOLS = {"SPAXX", "FDRXX", "FZFXX", "FZDXX", "SPRXX", "VMFXX", "FCASH", "CORE", "FDLXX", "SWVXX"}
@@ -187,6 +187,112 @@ def _parse_bank_activity(rows: list[list[str]], hi: int, res: ParseResult) -> Pa
         )
     )
     return res
+
+
+LOT_ALIASES = {
+    "account": ["account name", "account", "account number"],
+    "symbol": ["symbol", "ticker"],
+    "acquired": ["date acquired", "acquired", "acquisition date", "purchase date", "open date", "trade date"],
+    "shares": ["quantity", "shares", "units"],
+    "cost": ["cost basis total", "total cost basis", "cost basis", "cost"],
+    "value": ["current value", "market value", "value"],
+}
+
+
+@dataclass
+class LotRow:
+    symbol: str
+    acquired: date
+    shares: float
+    cost_basis_total: float
+    current_value: float = 0.0
+    account_name: str | None = None
+
+
+@dataclass
+class LotParse:
+    rows: list[LotRow] = field(default_factory=list)
+    row_errors: list[dict] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+
+
+def _lot_cols(headers: list[str]) -> dict[str, int]:
+    norm = [h.strip().lower() for h in headers]
+    return {k: norm.index(a) for k, names in LOT_ALIASES.items() for a in names if a in norm}
+
+
+def _lot_header(rows: list[list[str]]) -> tuple[int, dict[str, int]] | None:
+    for i, r in enumerate(rows[:30]):
+        c = _lot_cols(r)
+        if {"symbol", "acquired", "shares", "cost"} <= c.keys():
+            return i, c
+    return None
+
+
+def is_lot_export(text: str) -> bool:
+    """True for a per-lot cost-basis file (has a Date Acquired column), which must not be imported as positions."""
+    return _lot_header(list(csv.reader(io.StringIO(text.lstrip("\ufeff"))))) is not None
+
+
+def _parse_date(v: str) -> date | None:
+    for fmt in ("%m/%d/%Y", "%Y-%m-%d", "%m/%d/%y", "%b-%d-%Y", "%d-%b-%Y"):
+        with contextlib.suppress(ValueError):
+            return datetime.strptime(v.strip(), fmt).date()
+    return None
+
+
+def parse_lots(text: str) -> LotParse:
+    """Fidelity-style lot export: one row per purchase lot. Bad rows are reported and skipped, never guessed."""
+    rows = list(csv.reader(io.StringIO(text.lstrip("\ufeff"))))
+    out = LotParse()
+    found = _lot_header(rows)
+    if found is None:
+        out.warnings.append("No lot header row (needs Symbol, Date Acquired, Quantity and Cost Basis columns)")
+        return out
+    hi, cols = found
+
+    def get(r, k):
+        i = cols.get(k)
+        return r[i].strip() if i is not None and i < len(r) else ""
+
+    for n, r in enumerate(rows[hi + 1 :], start=hi + 2):
+        if not any(c.strip() for c in r):
+            continue
+        sym = get(r, "symbol").rstrip("*").upper()
+        if not sym or not get(r, "acquired"):
+            if len(r) > 2:  # footer disclaimers have a single long cell
+                out.row_errors.append({"line": n, "symbol": sym, "level": "error", "error": "missing symbol or acquisition date"})
+            continue
+        d = _parse_date(get(r, "acquired"))
+        if d is None:
+            out.row_errors.append({"line": n, "symbol": sym, "level": "error", "error": f"unreadable date '{get(r, 'acquired')}'"})
+            continue
+        if d > datetime.now(UTC).date():
+            out.row_errors.append({"line": n, "symbol": sym, "level": "error", "error": "acquisition date is in the future"})
+            continue
+        if bad_number(get(r, "shares")) or bad_number(get(r, "cost")):
+            out.row_errors.append({"line": n, "symbol": sym, "level": "error", "error": "unreadable shares or cost basis"})
+            continue
+        sh, cost = money(get(r, "shares")), money(get(r, "cost"))
+        if sh <= 0 or cost < 0:
+            out.row_errors.append({"line": n, "symbol": sym, "level": "error", "error": "shares must be positive and cost non-negative"})
+            continue
+        out.rows.append(LotRow(sym, d, sh, cost, money(get(r, "value")), get(r, "account") or None))
+    return out
+
+
+def apply_lots(s, parsed: LotParse, account_id: int) -> dict:
+    """Replace the account's lots for every symbol in the file (re-importing the same file changes nothing)."""
+    syms = {r.symbol for r in parsed.rows}
+    s.query(TaxLot).filter(TaxLot.account_id == account_id, TaxLot.symbol.in_(syms)).delete(synchronize_session=False)
+    for r in parsed.rows:
+        s.add(
+            TaxLot(
+                account_id=account_id, symbol=r.symbol, acquired=r.acquired, shares=r.shares, cost_basis_total=r.cost_basis_total, current_value=r.current_value
+            )
+        )
+    s.commit()
+    return {"lots": len(parsed.rows), "symbols": sorted(syms), "row_errors": parsed.row_errors}
 
 
 def _default_fx(currency: str) -> float | None:

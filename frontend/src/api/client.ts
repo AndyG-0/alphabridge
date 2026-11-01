@@ -682,7 +682,66 @@ export type Rebalance = {
   }
 }
 
+export type LotView = {
+  id: number
+  account_id: number
+  symbol: string
+  acquired: string
+  shares: number
+  cost_basis: number
+  value: number
+  gain: number
+  term: 'SHORT' | 'LONG'
+  days_to_long_term: number
+}
+export type HarvestRow = LotView & {
+  account: string
+  loss: number
+  rate: number
+  est_tax_savings: number
+  alternatives: string[]
+  identical_to: string[]
+  wash_conflicts: { account: string; symbol: string; acquired: string; owner: string }[]
+  avoid_buying_until: string
+}
+export type TaxLotReport = {
+  lots: number
+  missing_lots: string[]
+  notes: string[]
+  harvest?: {
+    candidates: HarvestRow[]
+    blocked_by_wash_sale: HarvestRow[]
+    total_loss: number
+    total_est_savings: number
+    note: string
+  }
+  gain_harvest?: {
+    zero_bracket_top: number
+    headroom: number
+    total_gain: number
+    picks: { lot_id: number; symbol: string; shares: number; gain: number }[]
+    note: string
+  }
+  upcoming_long_term?: LotView[]
+}
+export type LotSale = {
+  symbol: string
+  raised: number
+  shortfall: number
+  total_gain: number
+  est_tax: number
+  picks: { lot_id: number; acquired: string; term: string; shares: number; proceeds: number; gain: number; est_tax: number }[]
+}
+
 export const api = {
+  taxLots: () => req<TaxLotReport>('/tax-lots'),
+  lotSale: (symbol: string, amount: number) => req<LotSale>(`/tax-lots/sell?symbol=${encodeURIComponent(symbol)}&amount=${amount}`),
+  importLots: (file: File, accountId: number) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('account_id', String(accountId))
+    return req<{ lots: number; symbols: string[]; row_errors: RowError[] }>('/tax-lots/import', { method: 'POST', body: fd })
+  },
   rebalance: () => req<Rebalance>('/rebalance'),
   performance: (assume = false) => req<Performance>(`/performance${assume ? '?assume_contributions=1' : ''}`),
   cashFlows: () => req<CashFlowRow[]>('/cashflows'),

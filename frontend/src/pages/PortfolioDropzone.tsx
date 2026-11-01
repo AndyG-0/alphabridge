@@ -16,6 +16,7 @@ import { useAsync } from '../hooks'
 import ImportHistoryCard from './ImportHistoryCard'
 import PerformanceCard from './PerformanceCard'
 import RebalanceCard from './RebalanceCard'
+import TaxLotsCard from './TaxLotsCard'
 import XRayCard from './XRayCard'
 
 function MenuGradeCard({ account }: { account: Account }) {
@@ -477,6 +478,7 @@ export default function PortfolioDropzone() {
     <div className="space-y-4">
       <PerformanceCard />
       <RebalanceCard />
+      <TaxLotsCard />
       <XRayCard />
       <Card title="Statement dropzone">
         <div className="mb-3 grid gap-3 md:grid-cols-3">

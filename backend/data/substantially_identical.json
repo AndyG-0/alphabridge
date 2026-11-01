@@ -1,0 +1,123 @@
+{
+  "_source": "Funds tracking the same index are treated as substantially identical here (the conservative reading); the IRS has never published a list, so this is a planning aid, not tax advice. Different-index funds in `alternatives` are commonly used as replacements but are not guaranteed safe. Background: IRS Publication 550, 'Wash Sales'. https://www.irs.gov/publications/p550",
+  "_retrieved_on": "2026-10-31",
+  "groups": [
+    {
+      "index": "S&P 500",
+      "tickers": [
+        "VOO",
+        "IVV",
+        "SPY",
+        "SPLG",
+        "FXAIX",
+        "SWPPX",
+        "VFIAX"
+      ],
+      "alternatives": [
+        "VTI",
+        "ITOT",
+        "SCHX"
+      ]
+    },
+    {
+      "index": "US total market",
+      "tickers": [
+        "VTI",
+        "ITOT",
+        "SCHB",
+        "FSKAX",
+        "VTSAX",
+        "SWTSX"
+      ],
+      "alternatives": [
+        "VOO",
+        "SCHX",
+        "IWV"
+      ]
+    },
+    {
+      "index": "Nasdaq-100",
+      "tickers": [
+        "QQQ",
+        "QQQM",
+        "ONEQ"
+      ],
+      "alternatives": [
+        "VGT",
+        "XLK",
+        "SCHG"
+      ]
+    },
+    {
+      "index": "Total international",
+      "tickers": [
+        "VXUS",
+        "IXUS",
+        "FTIHX",
+        "VTIAX",
+        "SWISX"
+      ],
+      "alternatives": [
+        "VEA",
+        "IEFA",
+        "SCHF"
+      ]
+    },
+    {
+      "index": "US aggregate bond",
+      "tickers": [
+        "BND",
+        "AGG",
+        "SCHZ",
+        "FXNAX",
+        "VBTLX"
+      ],
+      "alternatives": [
+        "BNDW",
+        "IUSB",
+        "SPAB"
+      ]
+    },
+    {
+      "index": "Information technology",
+      "tickers": [
+        "VGT",
+        "FTEC",
+        "FSELX"
+      ],
+      "alternatives": [
+        "XLK",
+        "QQQ",
+        "IYW"
+      ]
+    },
+    {
+      "index": "Large-cap growth",
+      "tickers": [
+        "VUG",
+        "IWF",
+        "SCHG",
+        "MGK"
+      ],
+      "alternatives": [
+        "VOO",
+        "QQQ",
+        "SPYG"
+      ]
+    },
+    {
+      "index": "Small-cap blend",
+      "tickers": [
+        "VB",
+        "IJR",
+        "SCHA",
+        "VTWO"
+      ],
+      "alternatives": [
+        "IWM",
+        "VBR",
+        "IJH"
+      ]
+    }
+  ]
+}
