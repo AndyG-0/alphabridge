@@ -13,6 +13,11 @@ from security import client_key, init_security
 log = logging.getLogger("alphabridge")
 
 
+def _is_share(path: str) -> bool:
+    """Signed-token report links; the route verifies the token itself."""
+    return path.startswith("/api/share/") and path.endswith((".csv", ".pdf"))
+
+
 def create_app(overrides: dict | None = None) -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -33,7 +38,7 @@ def create_app(overrides: dict | None = None) -> Flask:
     @app.before_request
     def _auth():
         token = app.config["ACCESS_TOKEN"]
-        if not token or request.method == "OPTIONS" or request.path in ("/api/health", "/api/ready"):
+        if not token or request.method == "OPTIONS" or request.path in ("/api/health", "/api/ready") or _is_share(request.path):
             return None
         who = client_key()
         if limiter.blocked(who):
@@ -78,6 +83,8 @@ def create_app(overrides: dict | None = None) -> Flask:
         "early_access_routes",
         "tax_routes",
         "rmd_routes",
+        "spending_routes",
+        "export_routes",
     ):
         app.register_blueprint(importlib.import_module(f"routes.{mod}").bp)
 

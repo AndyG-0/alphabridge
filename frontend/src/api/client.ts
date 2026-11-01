@@ -29,6 +29,26 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 const json = (method: string, body?: unknown): RequestInit => ({ method, body: body === undefined ? undefined : JSON.stringify(body) })
 
+export interface SpendingActuals {
+  measured_monthly_avg: number
+  plan_monthly: number
+  difference: number
+  difference_pct: number | null
+  months_used: string[]
+  by_category_monthly_avg: Record<string, number>
+  uncategorized_count: number
+  lifestyle_creep: { flag: boolean; reason?: string; recent_avg: number | null; baseline_avg: number | null; change: number | null }
+  note: string
+}
+export interface SpendingTx {
+  id: number
+  date: string
+  description: string
+  amount: number
+  category: string
+  suggested_category: string
+}
+
 export interface ChatSession {
   id: number
   title: string
@@ -932,6 +952,32 @@ export const api = {
     fd.append('allow_duplicate', '1') // the user just reviewed this data
     return req<IngestResult>('/ingest', { method: 'POST', body: fd })
   },
+  spendingActuals: () => req<SpendingActuals>('/spending/actuals'),
+  spendingUncategorized: () => req<{ categories: string[]; transactions: SpendingTx[] }>('/spending/transactions?uncategorized=1'),
+  importSpending: (file: File) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return req<{ added: number; duplicates: number; uncategorized: number }>('/spending/import', { method: 'POST', body: fd })
+  },
+  setSpendingCategory: (id: number, category: string, makeRule = false) =>
+    req<{ ok: boolean }>(`/spending/transactions/${id}/category`, json('POST', { category, make_rule: makeRule })),
+  suggestSpending: () => req<{ suggested: number }>('/spending/suggest', json('POST')),
+  confirmSpending: (ids: number[]) => req<{ confirmed: number }>('/spending/confirm', json('POST', { ids })),
+  applySpendingToPlan: () => req<unknown>('/spending/apply-to-plan', json('POST', { confirm: true })),
+  download: async (path: string, filename: string) => {
+    const token = getToken()
+    const res = await fetch(`/api${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (!res.ok) throw new ApiError(res.status, res.statusText)
+    const url = URL.createObjectURL(await res.blob())
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  },
+  createShareLink: (days: number) => req<{ token: string; expires: string }>('/export/share', json('POST', { days })),
+  runBackup: () => req<{ path: string }>('/export/backup', json('POST')),
+  importExport: (data: unknown) => req<{ imported: Record<string, number> }>('/export/import', json('POST', { confirm: true, data })),
   importLog: () => req<ImportLogEntry[]>('/ingest/log'),
   undoImport: (id: number) => req<{ undone: number[] }>(`/ingest/${id}/undo`, json('POST')),
   chatSessions: () => req<ChatSession[]>('/chat/sessions'),

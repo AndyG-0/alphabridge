@@ -137,6 +137,51 @@ class TaxLot(Base):
     source: Mapped[str] = mapped_column(String(40), default="fidelity_lots")
 
 
+class Transaction(Base):
+    """One bank/card transaction (negative amount = money out). Categories come from rules, the source file, or the user;
+    LLM suggestions sit in `suggested_category` until the user confirms them."""
+
+    __tablename__ = "spending_transaction"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tx_date: Mapped[date] = mapped_column(Date, index=True)
+    description: Mapped[str] = mapped_column(String(300))
+    amount: Mapped[float] = mapped_column(Float)
+    account_label: Mapped[str] = mapped_column(String(120), default="")
+    category: Mapped[str] = mapped_column(String(40), default="")
+    category_source: Mapped[str] = mapped_column(String(20), default="")  # rule | file | user
+    suggested_category: Mapped[str] = mapped_column(String(40), default="")
+    tx_hash: Mapped[str] = mapped_column(String(64), unique=True)
+
+
+class CategoryRule(Base):
+    """User rule: description contains `pattern` (case-insensitive) -> category. Checked before the built-in keywords."""
+
+    __tablename__ = "category_rule"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    pattern: Mapped[str] = mapped_column(String(120), unique=True)
+    category: Mapped[str] = mapped_column(String(40))
+
+
+class SimpleFinConfig(Base):
+    """SimpleFIN Bridge connection; the access URL embeds credentials so it is stored encrypted."""
+
+    __tablename__ = "simplefin_config"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    access_url_encrypted: Mapped[str] = mapped_column(Text, default="")
+    last_sync: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_status: Mapped[str] = mapped_column(String(100), default="")
+
+
+class ImportTemplate(Base):
+    """Saved column mapping for a CSV layout the built-in parsers don't know (generic mapper)."""
+
+    __tablename__ = "import_template"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80), unique=True)
+    mapping: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
 class IngestionLog(Base):
     __tablename__ = "ingestion_log"
     id: Mapped[int] = mapped_column(primary_key=True)

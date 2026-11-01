@@ -15,15 +15,26 @@ import db
 from models import Account, Holding, IngestionLog, Liability, NetWorthSnapshot, Pension, TaxLot
 from services import doc_reader, institutions, validate_parse
 
-MMF_SYMBOLS = {"SPAXX", "FDRXX", "FZFXX", "FZDXX", "SPRXX", "VMFXX", "FCASH", "CORE", "FDLXX", "SWVXX"}
+MMF_SYMBOLS = {"SPAXX", "FDRXX", "FZFXX", "FZDXX", "SPRXX", "VMFXX", "FCASH", "CORE", "FDLXX", "SWVXX", "CASH"}
 
 ALIASES = {
     "account": ["account name", "account", "plan name"],
-    "symbol": ["symbol", "ticker", "cusip", "investment symbol"],
-    "name": ["description", "fund name", "investment", "investment option", "security name", "fund", "name", "security description"],
-    "shares": ["quantity", "shares", "units", "shares/units", "number of units", "units/shares"],
-    "price": ["last price", "price", "unit value", "share price", "nav", "unit price"],
-    "value": ["current value", "value", "market value", "balance", "ending balance", "total value", "current balance"],
+    "symbol": ["symbol", "ticker", "cusip", "investment symbol", "instrument"],
+    "name": ["description", "fund name", "investment", "investment option", "security name", "fund", "name", "security description", "investment name"],
+    "shares": ["quantity", "shares", "units", "shares/units", "number of units", "units/shares", "qty #", "qty"],
+    "price": ["last price", "price", "unit value", "share price", "nav", "unit price", "last price $", "current price"],
+    "value": [
+        "current value",
+        "value",
+        "market value",
+        "balance",
+        "ending balance",
+        "total value",
+        "current balance",
+        "mkt val (market value)",
+        "value $",
+        "equity",
+    ],
     "cost": ["cost basis total", "cost basis", "total cost basis", "cost"],
     "currency": ["currency", "currency code"],
 }
@@ -148,6 +159,33 @@ def _find_header_row(rows: list[list[str]]) -> int | None:
         m = _map_headers(r)
         if "value" in m and ("name" in m or "symbol" in m):
             return i
+    return None
+
+
+def detect_layout(rows: list[list[str]], hi: int) -> str:
+    """Name the export a positions CSV came from, by its header/preamble. Layouts are matched from
+    published column names (not verified against live exports); unknown files keep the generic parser."""
+    head = {h.strip().lower() for h in rows[hi]}
+    pre = " ".join(" ".join(r) for r in rows[:hi]).lower()
+    if "positions for account" in pre or "gain/loss $" in head or "% of account" in head:
+        return "schwab_positions"
+    if "price paid $" in head or "qty #" in head:
+        return "etrade_positions"
+    if "investment name" in head and "share price" in head:
+        return "vanguard_positions"
+    if "instrument" in head and "equity" in head:
+        return "robinhood_positions"
+    if "empower" in pre or ("ticker" in head and "empower" in " ".join(h for r in rows[:3] for h in r).lower()):
+        return "empower_positions"
+    return ""
+
+
+def _preamble_account(rows: list[list[str]], hi: int) -> str | None:
+    """Schwab-style title line: 'Positions for account Individual ...1234 as of ...'."""
+    for r in rows[:hi]:
+        m = re.search(r"positions for account\s+(.+?)(?:\s+as of\b|$)", " ".join(r), re.I)
+        if m:
+            return m.group(1).strip().strip('"')
     return None
 
 
@@ -314,6 +352,10 @@ def parse_csv(text: str, fx=None) -> ParseResult:
     if _is_bank_activity(rows[hi], cols):
         return _parse_bank_activity(rows, hi, res)
     res.parser = "fidelity_positions" if "symbol" in cols and "account" in cols else "plan_balance"
+    layout = detect_layout(rows, hi)
+    pre_account = _preamble_account(rows, hi) if layout == "schwab_positions" else None
+    if layout and "account" not in cols:
+        res.parser = layout
 
     def get(r, key):
         i = cols.get(key)
@@ -328,8 +370,10 @@ def parse_csv(text: str, fx=None) -> ParseResult:
         value = money(get(r, "value"))
         if not (name or symbol) or (value == 0 and not get(r, "shares") and not bad_number(get(r, "value"))):
             continue
-        if symbol.lower().startswith("pending") or name.lower() in ("total", "account total"):
+        if symbol.lower().startswith("pending") or name.lower() in ("total", "account total") or symbol.lower() in ("account total", "total"):
             continue
+        if symbol.lower().startswith("cash & cash") or name.lower().startswith("cash & cash"):
+            symbol, name = "CASH", "Cash & cash investments"
         label = symbol.rstrip("*").upper() or name[:30]
         if bad := [k for k in ("value", "shares", "price", "cost") if bad_number(get(r, k))]:
             res.row_errors.append({"line": line_no, "symbol": label, "level": "error", "error": f"Not a number in: {', '.join(bad)}; row skipped"})
@@ -367,12 +411,16 @@ def parse_csv(text: str, fx=None) -> ParseResult:
                 market_value=value,
                 cost_basis_total=cost,
                 asset_class=guess_asset_class(sym, name),
-                account_name=get(r, "account") or None,
+                account_name=get(r, "account") or pre_account,
                 needs_mapping=needs_mapping and guess_asset_class(sym, name) != "MONEY_MARKET",
                 currency=cur,
                 fx_rate=rate,
             )
         )
+    if layout and res.rows:
+        printed = {i: r.price for i, r in enumerate(res.rows) if r.price and r.shares}
+        res.checks = validate_parse.check_rows(res.rows, printed)
+        res.confidence = validate_parse.confidence(res.checks)
     return res
 
 

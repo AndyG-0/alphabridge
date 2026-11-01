@@ -178,7 +178,7 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
 
 ## Track D — Data in and out
 
-- [ ] **D1 More importers** — Schwab, Vanguard, E*TRADE, Robinhood, IBKR, Empower, Monarch/YNAB/Mint CSV, OFX/QFX/QIF, generic mapper, SimpleFIN Bridge.
+- [x] **D1 More importers** — Schwab, Vanguard, E*TRADE, Robinhood, IBKR, Empower, Monarch/YNAB/Mint CSV, OFX/QFX/QIF, generic mapper, SimpleFIN Bridge. (Done: Schwab/E*TRADE/Vanguard layouts detected in `ingestion.detect_layout` (aliases extended, Schwab account from the title line, "Cash & Cash Investments" read as cash), `services/importers/ibkr.py` (Open Positions, FX converted), `services/importers/ofx.py` (OFX v1/v2 positions + cash, QIF net cash flagged low-confidence), `services/importers/mapper.py` + `ImportTemplate` (migration `c1d2e3f4a5b6`, `GET/POST/DELETE /api/ingest/templates`, `template_id`/`mapping` on `/api/ingest`); all fill `checks` via `validate_parse`; fixtures in `tests/fixtures_data/` (a `fixtures/` dir would collide with `fixtures.py`); institutions + name rules added. SimpleFIN Bridge in `services/simplefin.py` (setup-token claim, Fernet-encrypted access URL in `SimpleFinConfig`, migration `d2e3f4a5b6c7`, `/api/simplefin*`, daily `simplefin_sync` job; one cash-class holding per account). Left: SimpleFIN is tested against mocked responses only, balances only (no transactions/holdings), skips negative and non-USD accounts; layouts are built from published column names, not checked against live exports, and the Robinhood/Empower/Mint/YNAB/Monarch formats have no dedicated parser (Robinhood and Empower go through the generic path or the mapper; Monarch/YNAB/Mint are transaction exports, handled by the D4 spending parser); no frontend UI for the mapper/templates yet (API only); `.ofx` Vanguard/E*TRADE files untested against real exports.)
   - *Acceptance:* each importer has anonymized golden fixtures under `backend/tests/fixtures/` and a `validate_parse` arithmetic check; export instructions added to `services/institutions.py`; generic CSV mapper with saved templates.
   - *Touch:* `backend/services/ingestion.py`, `backend/services/institutions.py`, `backend/tests/fixtures/`
   - *Depends:* E6
@@ -190,15 +190,15 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
   - *Acceptance:* scheduled `NetWorthSnapshot`; time-series chart; asset/liability breakdown; milestones; monthly plan-vs-actual drift.
   - *Touch:* `backend/services/scheduler.py`, frontend Dashboard
   - *Depends:* E6
-- [ ] **D4 Spending actuals** — budgeting-lite.
+- [x] **D4 Spending actuals** — budgeting-lite. (Done: `services/transactions.py` (Chase/Monarch signed, Mint, YNAB, debit/credit CSVs; rules from `data/transaction_rules.json` + user rules; LLM suggestions never applied until confirmed; measured vs plan monthly spend, partial month excluded, lifestyle-creep flag), `Transaction`/`CategoryRule` (migration `e3f4a5b6c7d8`), `/api/spending/*` incl. opt-in `apply-to-plan`, chat tool `get_spending_actuals`, Spending card on Portfolio. Left: `transaction_rules.json` has no `source_url` (keyword rules are heuristics, `verified: false`); no UI for editing rules or the mapper/templates; transfers are matched by keyword only.)
   - *Acceptance:* import bank transactions; categorize via rules with LLM suggestions that require human confirm; measured spend vs plan assumption; lifestyle-creep flag; optionally feed measured spend into the planner.
   - *Touch:* `backend/services/transactions.py`, `backend/models.py` (+ migration)
   - *Depends:* D1
-- [ ] **D5 Exports and backups** — own your data.
+- [x] **D5 Exports and backups** — own your data. (Done: `services/export.py` + `routes/export_routes.py`: CSV and dependency-free text PDF plan report, full JSON export/import with round-trip test (credentials and caches excluded), Fernet-encrypted backup to local path / WebDAV / S3 via env config with a nightly `backup` job, HMAC-signed read-only share links (max 30 days) limited to `/api/share/<token>/report.csv|pdf`, Data card in Settings. Left: S3 untested (no mocked client test); share links cannot be revoked individually (rotate `APP_SECRET`); the PDF is plain text, no charts; import replaces everything and is not merge-aware; backup destination is env-only, not a Settings form.)
   - *Acceptance:* PDF and CSV plan report; full JSON export/import round-trip test; scheduled encrypted backup to local path/S3/WebDAV; read-only token-scoped share link.
   - *Touch:* `backend/services/export.py`, `backend/routes/settings_routes.py`
   - *Depends:* E12
-- [ ] **D6 MCP server** — read-only planning tools for external agents.
+- [x] **D6 MCP server** — read-only planning tools for external agents. (Done: `backend/mcp_server.py` exposes every `chat_tools` read-only tool (plan health, scenarios, holdings, etc.) over stdio or streamable HTTP with constant-time bearer auth, refuses to start HTTP without a token; `mcp` pinned `>=2,<3` (2.x moved `FastMCP` to `MCPServer`); tests in `tests/test_mcp_server.py`; README section. Left: each tool takes its arguments as a single `args` object rather than its native schema; no per-tool scoping or rate limit.)
   - *Acceptance:* uses the existing `mcp` dependency; tools: plan summary, scenarios, holdings; bearer-auth; contract tests; documented in README.
   - *Touch:* `backend/mcp_server.py`
   - *Depends:* E6

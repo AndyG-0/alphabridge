@@ -163,11 +163,34 @@ def net_worth_snapshot(app):
         s.commit()
 
 
+@_tracked("simplefin_sync")
+def simplefin_sync(app):
+    """Daily balance pull when SimpleFIN is connected; a no-op otherwise."""
+    with app.app_context():
+        from services import simplefin
+
+        if simplefin.status()["connected"]:
+            simplefin.sync()
+
+
+@_tracked("backup")
+def backup(app):
+    """Nightly encrypted backup when BACKUP_DEST is configured; a no-op otherwise."""
+    with app.app_context():
+        import db
+        from services import export
+
+        if export.destination():
+            export.run_backup(db.session())
+
+
 def start_scheduler(app) -> BackgroundScheduler:
     sched = BackgroundScheduler(timezone="UTC")
     sched.add_job(weekly_screen, CronTrigger(day_of_week="sun", hour=14), args=[app], id="weekly_screen", replace_existing=True)
     sched.add_job(daily_checks, CronTrigger(hour=21, minute=30, day_of_week="mon-fri"), args=[app], id="daily_checks", replace_existing=True)
     sched.add_job(net_worth_snapshot, CronTrigger(hour=22, minute=0), args=[app], id="net_worth_snapshot", replace_existing=True)
+    sched.add_job(simplefin_sync, CronTrigger(hour=12, minute=0), args=[app], id="simplefin_sync", replace_existing=True)
+    sched.add_job(backup, CronTrigger(hour=3, minute=0), args=[app], id="backup", replace_existing=True)
     sched.start()
     app.extensions["scheduler"] = sched
     return sched

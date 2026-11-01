@@ -1,3 +1,4 @@
+import DataCard from './DataCard'
 import { useEffect, useRef, useState } from 'react'
 import { api, type Liability, type LiabilityIn, type LiabilityKind, type Owner, type Profile } from '../api/client'
 import { Button, Card, Err, Input, pct } from '../components/ui'
@@ -663,6 +664,7 @@ export default function Settings() {
           </Button>
         </div>
       </Card>
+      <DataCard />
       <SchedulerPanel />
     </div>
   )

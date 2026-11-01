@@ -16,6 +16,7 @@ scipy
 pdfplumber
 python-multipart
 requests
-mcp
+mcp>=2,<3
 pillow
 filelock>=4.2.1  # transitive (huggingface/litellm); pinned for CVE fixes
+boto3

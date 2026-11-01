@@ -27,6 +27,7 @@ backend/coverage.xml
 samples/
 statements/
 *.csv
+!backend/tests/fixtures_data/*.csv
 *.pdf
 *.xlsx
 backend/sqlite:/

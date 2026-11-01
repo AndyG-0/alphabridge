@@ -1,15 +1,19 @@
+import csv
+import io
 import re
 from datetime import date
 
+import requests
 from flask import Blueprint, jsonify, request
 from pydantic import BaseModel, Field, field_validator
 
 import db
-from models import Account, AllowedPlanMenu, CashFlow, Holding, IngestionLog, Liability, TaxLot
+from models import Account, AllowedPlanMenu, CashFlow, Holding, ImportTemplate, IngestionLog, Liability, TaxLot
 from routes._helpers import get_profile
 from schemas import AccountIn, ConfirmedIngest, PlanMenuItemIn, ProfileIn, ProxyMapIn
 from security import safe_filename, validate_upload
-from services import corporate_actions, doc_reader, ingestion, institutions, market_data, networth, performance, rebalance, risk, tax_lots, xray
+from services import corporate_actions, doc_reader, ingestion, institutions, market_data, networth, performance, rebalance, risk, simplefin, tax_lots, xray
+from services.importers import ibkr, mapper, ofx
 
 bp = Blueprint("portfolio", __name__, url_prefix="/api")
 
@@ -159,6 +163,80 @@ def _confirmed_result(raw: str) -> ingestion.ParseResult:
     return res
 
 
+def _mapping_from_form() -> mapper.Mapping:
+    if tid := request.form.get("template_id", type=int):
+        t = db.session().get(ImportTemplate, tid)
+        if t is None:
+            raise ValueError(f"No import template {tid}")
+        return mapper.Mapping.model_validate(t.mapping)
+    return mapper.Mapping.model_validate_json(request.form["mapping"])
+
+
+@bp.get("/simplefin")
+def simplefin_status():
+    return jsonify(simplefin.status())
+
+
+@bp.post("/simplefin/connect")
+def simplefin_connect():
+    token = str((request.get_json(silent=True) or {}).get("setup_token", ""))
+    if not token.strip():
+        return jsonify(error="setup_token required"), 400
+    try:
+        simplefin.connect(token)
+    except (ValueError, requests.RequestException) as e:
+        return jsonify(error=str(e)), 422
+    return jsonify(simplefin.status()), 201
+
+
+@bp.post("/simplefin/sync")
+def simplefin_sync():
+    try:
+        return jsonify(simplefin.sync())
+    except (ValueError, requests.RequestException) as e:
+        return jsonify(error=str(e)), 422
+
+
+@bp.delete("/simplefin")
+def simplefin_disconnect():
+    simplefin.disconnect()
+    return "", 204
+
+
+@bp.get("/ingest/templates")
+def list_templates():
+    return jsonify([{"id": t.id, "name": t.name, "mapping": t.mapping} for t in db.session().query(ImportTemplate).order_by(ImportTemplate.name)])
+
+
+@bp.post("/ingest/templates")
+def save_template():
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name", "")).strip()[:80]
+    if not name:
+        return jsonify(error="name required"), 400
+    try:
+        m = mapper.Mapping.model_validate(body.get("mapping") or {})
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    s = db.session()
+    t = s.query(ImportTemplate).filter_by(name=name).first() or ImportTemplate(name=name)
+    t.mapping = m.model_dump()
+    s.add(t)
+    s.commit()
+    return jsonify(id=t.id, name=t.name, mapping=t.mapping), 201
+
+
+@bp.delete("/ingest/templates/<int:tid>")
+def delete_template(tid: int):
+    s = db.session()
+    t = s.get(ImportTemplate, tid)
+    if t is None:
+        return jsonify(error="not found"), 404
+    s.delete(t)
+    s.commit()
+    return "", 204
+
+
 @bp.post("/ingest")
 def ingest():
     """CSV / known PDFs import immediately. OCR/AI-read documents return a preview (nothing written) that the
@@ -185,9 +263,18 @@ def ingest():
                 result = ingestion.parse_image(data)
             else:
                 text = data.decode("utf-8-sig", errors="replace")
-                if ingestion.is_lot_export(text):
+                if low.endswith((".ofx", ".qfx")) or ofx.is_ofx(text):
+                    result = ofx.parse_ofx(text)
+                elif low.endswith(".qif") or ofx.is_qif(text):
+                    result = ofx.parse_qif(text, request.form.get("account_name") or "QIF account")
+                elif request.form.get("template_id") or request.form.get("mapping"):
+                    result = mapper.parse_with_mapping(text, _mapping_from_form())
+                elif ibkr.is_ibkr(list(csv.reader(io.StringIO(text)))):
+                    result = ibkr.parse_ibkr(text)
+                elif ingestion.is_lot_export(text):
                     return jsonify(error="This is a lot-level cost-basis export. Use 'Import tax lots' so it isn't read as positions."), 422
-                result = ingestion.parse_csv(text)
+                else:
+                    result = ingestion.parse_csv(text)
     except Exception as e:
         s = db.session()
         s.add(IngestionLog(filename=name, account_id=account_id, status="ERROR", message=str(e)[:500]))
