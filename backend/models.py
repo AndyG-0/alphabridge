@@ -57,6 +57,7 @@ class UserProfile(Base):
     ltc_start_age: Mapped[float] = mapped_column(Float, default=85)
     guardrails_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     spending_model: Mapped[dict] = mapped_column(JSON, default=dict)  # services/spending.py SpendingModel; {} = flat spending
+    target_allocation: Mapped[dict] = mapped_column(JSON, default=dict)  # {asset_class: weight} summing to 1; {} = none set (performance, rebalancing)
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
 
     @property
@@ -148,6 +149,16 @@ class NetWorthSnapshot(Base):
     dry_powder: Mapped[float] = mapped_column(Float, default=0)
     liabilities: Mapped[float] = mapped_column(Float, default=0)
     breakdown: Mapped[dict] = mapped_column(JSON, default=dict)  # {"assets": {tax_bucket: $}, "liabilities": {kind: $}}
+
+
+class CashFlow(Base):
+    """External money in (+) or out (-) of the invested portfolio; needed to separate your contributions from market returns (TWR/MWR)."""
+
+    __tablename__ = "cash_flow"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    on: Mapped[date] = mapped_column(Date)
+    amount: Mapped[float] = mapped_column(Float)
+    note: Mapped[str] = mapped_column(String(200), default="")
 
 
 class Scenario(Base):

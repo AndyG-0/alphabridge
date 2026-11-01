@@ -1,14 +1,15 @@
 import re
+from datetime import date
 
 from flask import Blueprint, jsonify, request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 import db
-from models import Account, AllowedPlanMenu, Holding, IngestionLog, Liability
+from models import Account, AllowedPlanMenu, CashFlow, Holding, IngestionLog, Liability
 from routes._helpers import get_profile
 from schemas import AccountIn, ConfirmedIngest, PlanMenuItemIn, ProfileIn, ProxyMapIn
 from security import safe_filename, validate_upload
-from services import corporate_actions, doc_reader, ingestion, institutions, networth, xray
+from services import corporate_actions, doc_reader, ingestion, institutions, market_data, networth, performance, xray
 
 bp = Blueprint("portfolio", __name__, url_prefix="/api")
 
@@ -331,6 +332,58 @@ def networth_history():
 @bp.get("/networth/summary")
 def networth_summary():
     return jsonify(networth.summary(db.session(), get_profile()))
+
+
+class CashFlowIn(BaseModel):
+    on: date
+    amount: float
+    note: str = Field(default="", max_length=200)
+
+    @field_validator("amount")
+    @classmethod
+    def _nonzero(cls, v: float) -> float:
+        if v == 0:
+            raise ValueError("amount must be non-zero")
+        return v
+
+
+def flow_dict(f: CashFlow) -> dict:
+    return {"id": f.id, "on": f.on.isoformat(), "amount": f.amount, "note": f.note}
+
+
+@bp.get("/cashflows")
+def cashflows_list():
+    return jsonify([flow_dict(f) for f in db.session().query(CashFlow).order_by(CashFlow.on)])
+
+
+@bp.post("/cashflows")
+def cashflows_add():
+    body = CashFlowIn.model_validate(request.get_json(silent=True) or {})
+    s = db.session()
+    f = CashFlow(on=body.on, amount=body.amount, note=body.note)
+    s.add(f)
+    s.commit()
+    return jsonify(flow_dict(f)), 201
+
+
+@bp.delete("/cashflows/<int:fid>")
+def cashflows_delete(fid):
+    s = db.session()
+    f = s.get(CashFlow, fid)
+    if f is None:
+        return jsonify({"error": "not found"}), 404
+    s.delete(f)
+    s.commit()
+    return "", 204
+
+
+def performance_report(assume: bool) -> dict:
+    return performance.report(db.session(), get_profile(), market_data.get_closes, market_data.get_fundamentals, assume_contributions=assume)
+
+
+@bp.get("/performance")
+def performance_get():
+    return jsonify(performance_report(request.args.get("assume_contributions") in ("1", "true")))
 
 
 def menu_dict(m: AllowedPlanMenu) -> dict:

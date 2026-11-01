@@ -21,7 +21,7 @@ from models import (
     ScreenerResult,
 )
 from routes._helpers import get_profile
-from services import early_access, household, hsa, market_data, networth, planner, rmd, roth, scenarios, spending, state_rules, withdrawals, xray
+from services import early_access, household, hsa, market_data, networth, performance, planner, rmd, roth, scenarios, spending, state_rules, withdrawals, xray
 from services import pension as pension_svc
 from services import quant_engine as qe
 from services import research_pipeline as rp
@@ -311,6 +311,12 @@ TOOLS = [
         "Net-worth series with asset/liability breakdown, milestones reached and next, and monthly plan-vs-actual drift "
         "(deterministic projection from the first snapshot).",
         _obj({}),
+    ),
+    (
+        "get_performance",
+        "Portfolio time-weighted and money-weighted return, comparison with SPY and the target allocation, fee drag from expense ratios, "
+        "and a monthly dividend/interest income calendar (deterministic).",
+        _obj({"assume_contributions": {"type": "boolean"}}),
     ),
     (
         "grade_401k_menu",
@@ -807,6 +813,9 @@ HANDLERS = {
     "get_notification_status": lambda a: _notifications(),
     "get_net_worth_history": _history,
     "get_net_worth_summary": lambda a: networth.summary(db.session(), get_profile()),
+    "get_performance": lambda a: performance.report(
+        db.session(), get_profile(), market_data.get_closes, market_data.get_fundamentals, assume_contributions=bool(a.get("assume_contributions"))
+    ),
     "grade_401k_menu": _menu,
 }
 

@@ -46,6 +46,21 @@ class ProfileIn(BaseModel):
     spending_model: dict | None = None
     ltc_start_age: float | None = Field(None, ge=50, le=100)
     guardrails_enabled: bool | None = None
+    target_allocation: dict[str, float] | None = None
+
+    @field_validator("target_allocation")
+    @classmethod
+    def _valid_target(cls, v: dict[str, float] | None):
+        if not v:
+            return v
+        from services.quant_engine import ASSET_ASSUMPTIONS
+
+        bad = [k for k in v if k not in ASSET_ASSUMPTIONS]
+        if bad:
+            raise ValueError(f"unknown asset class: {', '.join(bad)}")
+        if any(w < 0 for w in v.values()) or abs(sum(v.values()) - 1) > 0.01:
+            raise ValueError("target weights must be non-negative and sum to 1")
+        return v
 
     @field_validator("state")
     @classmethod

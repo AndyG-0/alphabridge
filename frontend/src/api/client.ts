@@ -615,7 +615,44 @@ const updateAccount = (a: Account, patch: Partial<Pick<Account, 'name' | 'instit
     }),
   )
 
+export type PerfPeriod = { start: string; end: string; return: number }
+export type BenchmarkRow = { name: string; return: number | null; excess: number | null }
+export type CashFlowRow = { id: number; on: string; amount: number; note: string }
+export type Performance = {
+  points: number
+  flow_mode: 'recorded' | 'none' | 'assumed_monthly_contribution'
+  flows: number
+  notes: string[]
+  returns: {
+    twr: { total: number | null; annualized: number | null; days: number; periods: PerfPeriod[] }
+    mwr: number | null
+    start: string
+    end: string
+    start_value: number
+    end_value: number
+  } | null
+  benchmarks?: { market: BenchmarkRow; target: BenchmarkRow | null; approximate: boolean }
+  fees: {
+    annual_fee: number
+    weighted_expense_ratio: number
+    covered_pct: number
+    unknown: string[]
+    rows: { symbol: string; value: number; expense_ratio: number; annual_fee: number }[]
+    drag: Record<string, { cost: number; cost_pct: number; years: number }>
+  }
+  income: {
+    months: { month: number; amount: number }[]
+    annual_income: number
+    missing_yield: string[]
+    assumption: string
+  }
+}
+
 export const api = {
+  performance: (assume = false) => req<Performance>(`/performance${assume ? '?assume_contributions=1' : ''}`),
+  cashFlows: () => req<CashFlowRow[]>('/cashflows'),
+  addCashFlow: (f: { on: string; amount: number; note?: string }) => req<CashFlowRow>('/cashflows', json('POST', f)),
+  deleteCashFlow: (id: number) => req<null>(`/cashflows/${id}`, json('DELETE')),
   pensions: () => req<Pension[]>('/pensions'),
   savePension: (id: number, edit: PensionEdit) => req<Pension>(`/pensions/${id}`, json('PUT', edit)),
   deletePension: (id: number) => req<null>(`/pensions/${id}`, json('DELETE')),

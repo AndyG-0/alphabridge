@@ -149,7 +149,7 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
   - *Acceptance:* exposure by asset class, sector, geography, market cap; fund overlap matrix; concentration including employer stock; cached fund-holdings fetch with graceful fallback.
   - *Touch:* `backend/services/xray.py`, `backend/services/market_data.py`, frontend
   - *Depends:* E6
-- [ ] **I2 Performance and benchmarks** — how the portfolio actually did.
+- [x] **I2 Performance and benchmarks** — how the portfolio actually did. (Done: `services/performance.py` — TWR by chaining snapshot sub-periods with recorded `CashFlow`s (new table, `POST/GET/DELETE /api/cashflows`), MWR as XIRR via SciPy brentq, comparison with SPY and with a static blend of the `target_allocation` (new `UserProfile` JSON field, validated; class proxies in `data/benchmarks.json`), fee drag from plan-menu or `data/fund_fees.json` expense ratios (flagged unverified, source URL included) through `assumptions.fee_drag`, and a monthly income calendar (money markets monthly, others assumed quarterly on trailing yield). Migration `e7f8a9b0c1d2`; `GET /api/performance`, `get_performance` chat tool, Performance card on Portfolio. Left: no UI editor for `target_allocation` yet (API only); benchmarks are price-only so they understate total return by the dividend yield; the quarterly pay-month assumption is a placeholder because yfinance gives no pay dates.)
   - *Acceptance:* TWR and MWR, vs benchmark and vs target allocation, fee drag, dividend/income calendar; tested against hand-computed examples.
   - *Touch:* `backend/services/performance.py`, `backend/models.py`
   - *Depends:* D3
