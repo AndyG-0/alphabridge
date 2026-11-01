@@ -140,6 +140,7 @@ class NetWorthSnapshot(Base):
     satellite: Mapped[float] = mapped_column(Float, default=0)
     dry_powder: Mapped[float] = mapped_column(Float, default=0)
     liabilities: Mapped[float] = mapped_column(Float, default=0)
+    breakdown: Mapped[dict] = mapped_column(JSON, default=dict)  # {"assets": {tax_bucket: $}, "liabilities": {kind: $}}
 
 
 class Scenario(Base):

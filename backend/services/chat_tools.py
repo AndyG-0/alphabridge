@@ -21,7 +21,7 @@ from models import (
     ScreenerResult,
 )
 from routes._helpers import get_profile
-from services import early_access, household, hsa, market_data, planner, rmd, roth, scenarios, spending, state_rules, withdrawals, xray
+from services import early_access, household, hsa, market_data, networth, planner, rmd, roth, scenarios, spending, state_rules, withdrawals, xray
 from services import pension as pension_svc
 from services import quant_engine as qe
 from services import research_pipeline as rp
@@ -306,6 +306,12 @@ TOOLS = [
     ("get_sector_overview", "Sector relative-strength ranking used by the macro overlay.", _obj({})),
     ("get_notification_status", "Whether Discord/SMTP alert channels are configured (never secrets) and background job status.", _obj({})),
     ("get_net_worth_history", "Net-worth snapshots over time.", _obj({"limit": {"type": "integer"}})),
+    (
+        "get_net_worth_summary",
+        "Net-worth series with asset/liability breakdown, milestones reached and next, and monthly plan-vs-actual drift "
+        "(deterministic projection from the first snapshot).",
+        _obj({}),
+    ),
     (
         "grade_401k_menu",
         "Grade an account's plan menu by expense ratio and suggest cheaper swaps (needs menu entries).",
@@ -792,6 +798,7 @@ HANDLERS = {
     "get_sector_overview": lambda a: market_data.sector_strength(),
     "get_notification_status": lambda a: _notifications(),
     "get_net_worth_history": _history,
+    "get_net_worth_summary": lambda a: networth.summary(db.session(), get_profile()),
     "grade_401k_menu": _menu,
 }
 

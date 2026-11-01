@@ -186,7 +186,7 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
   - *Acceptance:* idempotent re-import (dedupe), undo import, per-row errors in preview, split/spinoff adjustments, multi-currency, `IngestionLog` audit view in UI.
   - *Touch:* `backend/services/ingestion.py`, `backend/routes/portfolio_routes.py`, frontend
   - *Depends:* D1
-- [ ] **D3 Net-worth history** — snapshots and plan-vs-actual.
+- [x] **D3 Net-worth history** — snapshots and plan-vs-actual. (Done: `services/networth.py` — series, asset/liability `breakdown` on `NetWorthSnapshot` (migration `c5d6e7f8a9b0`), milestones incl. the FI number (25x retirement spend, a marker only), monthly plan-vs-actual drift projected from the first snapshot at the holdings' expected return plus monthly savings; `snapshot_net_worth` is now one row per UTC day; daily `net_worth_snapshot` scheduler job; `GET /api/networth/summary`, `get_net_worth_summary` chat tool, Net-worth card on the Dashboard. Left: drift baseline is the first snapshot, not a saved plan, so back-filled history isn't compared against what the plan said at the time.)
   - *Acceptance:* scheduled `NetWorthSnapshot`; time-series chart; asset/liability breakdown; milestones; monthly plan-vs-actual drift.
   - *Touch:* `backend/services/scheduler.py`, frontend Dashboard
   - *Depends:* E6

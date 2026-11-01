@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { api, type Owner } from '../api/client'
 import { Badge, Bar, Card, Err, Hint, pct, usd } from '../components/ui'
 import { useAsync } from '../hooks'
+import NetWorthCard from './NetWorthCard'
 
 const COLORS = { safe_core: '#38bdf8', satellite: '#a78bfa', dry_powder: '#34d399' }
 const LABELS = { safe_core: 'Safe Core (401k)', satellite: 'Growth Satellite', dry_powder: 'Dry Powder (cash)' }
@@ -75,6 +76,8 @@ export default function Dashboard() {
         )}
         {pf.data && pf.data.accounts.length === 0 && <p className="mt-3 text-sm text-slate-400">No accounts yet — upload a statement in the Portfolio tab.</p>}
       </Card>
+
+      <NetWorthCard />
 
       {debt.data && debt.data.liabilities.length > 0 && (
         <Card title="Debt" className="md:col-span-2">

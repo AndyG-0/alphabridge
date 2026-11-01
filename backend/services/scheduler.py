@@ -74,10 +74,23 @@ def daily_checks(app):
                 log.warning("notify failed: %s", e)
 
 
+@_tracked("net_worth_snapshot")
+def net_worth_snapshot(app):
+    """Daily snapshot so the history has points even when no file is imported (idempotent per UTC day)."""
+    with app.app_context():
+        import db
+        from services import ingestion
+
+        s = db.session()
+        ingestion.snapshot_net_worth(s)
+        s.commit()
+
+
 def start_scheduler(app) -> BackgroundScheduler:
     sched = BackgroundScheduler(timezone="UTC")
     sched.add_job(weekly_screen, CronTrigger(day_of_week="sun", hour=14), args=[app], id="weekly_screen", replace_existing=True)
     sched.add_job(daily_checks, CronTrigger(hour=21, minute=30, day_of_week="mon-fri"), args=[app], id="daily_checks", replace_existing=True)
+    sched.add_job(net_worth_snapshot, CronTrigger(hour=22, minute=0), args=[app], id="net_worth_snapshot", replace_existing=True)
     sched.start()
     app.extensions["scheduler"] = sched
     return sched

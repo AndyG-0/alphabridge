@@ -666,7 +666,31 @@ def cash_total(s) -> float:
     )
 
 
-def snapshot_net_worth(s):
+def net_worth_breakdown(s) -> dict:
+    """Assets by account tax bucket and debts by kind, for the snapshot's asset/liability breakdown."""
+    assets: dict[str, float] = {}
+    for a in s.query(Account).all():
+        assets[a.tax_bucket] = assets.get(a.tax_bucket, 0.0) + sum(h.market_value for h in a.holdings)
+    debts: dict[str, float] = {}
+    for liab in s.query(Liability).all():
+        debts[liab.kind] = debts.get(liab.kind, 0.0) + liab.balance
+    return {"assets": assets, "liabilities": debts}
+
+
+def snapshot_net_worth(s, when: datetime | None = None):
+    """Record net worth; one row per UTC day (a second call the same day updates it, so imports and the scheduler never double count)."""
+    when = when or datetime.now(UTC)
     t = bucket_totals(s)
     debt = sum(liab.balance for liab in s.query(Liability).all())
-    s.add(NetWorthSnapshot(total=sum(t.values()) - debt, liabilities=debt, **t))
+    day = when.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+    row = (
+        s.query(NetWorthSnapshot)
+        .filter(NetWorthSnapshot.taken_at >= day, NetWorthSnapshot.taken_at < day.replace(hour=23, minute=59, second=59, microsecond=999999))
+        .first()
+    )
+    if row is None:
+        row = NetWorthSnapshot(taken_at=when.replace(tzinfo=None))
+        s.add(row)
+    row.total, row.liabilities, row.breakdown = sum(t.values()) - debt, debt, net_worth_breakdown(s)
+    row.safe_core, row.satellite, row.dry_powder = t["safe_core"], t["satellite"], t["dry_powder"]
+    return row

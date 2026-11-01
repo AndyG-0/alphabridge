@@ -87,6 +87,25 @@ export interface Portfolio {
   net_worth: number
   by_owner: Record<Owner, { assets: number; liabilities: number }>
 }
+export interface NetWorthPoint {
+  taken_at: string
+  total: number
+  safe_core: number
+  satellite: number
+  dry_powder: number
+  liabilities: number
+  breakdown: { assets?: Record<string, number>; liabilities?: Record<string, number> }
+}
+export interface NetWorthSummary {
+  series: NetWorthPoint[]
+  latest: NetWorthPoint | null
+  milestones: {
+    reached: { level: number; reached_on: string; is_fi: boolean }[]
+    next: { level: number; remaining: number; is_fi: boolean } | null
+  }
+  drift: { month: string; actual: number; planned: number; drift: number; drift_pct: number | null }[]
+  assumptions: { annual_return: number; monthly_contribution: number; baseline: string | null }
+}
 export interface Profile {
   birth_date: string
   spouse_birth_date: string | null
@@ -590,6 +609,7 @@ export const api = {
   debt: () => req<DebtSummary>('/planner/debt'),
   portfolio: () => req<Portfolio>('/portfolio'),
   xray: () => req<XRay>('/portfolio/xray'),
+  netWorth: () => req<NetWorthSummary>('/networth/summary'),
   profile: () => req<Profile>('/profile'),
   saveProfile: (p: Partial<Profile>) => req<Profile>('/profile', json('PUT', p)),
   fire: (w: FireWhatIf = {}) => {

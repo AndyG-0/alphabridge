@@ -7,7 +7,7 @@ from services import research_pipeline as rp
 def test_start_scheduler_registers_jobs(app):
     sched = scheduler.start_scheduler(app)
     try:
-        assert {j.id for j in sched.get_jobs()} == {"weekly_screen", "daily_checks"}
+        assert {j.id for j in sched.get_jobs()} == {"weekly_screen", "daily_checks", "net_worth_snapshot"}
     finally:
         sched.shutdown(wait=False)
 

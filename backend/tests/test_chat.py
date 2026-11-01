@@ -182,6 +182,7 @@ def test_every_read_route_family_has_a_chat_tool(client):
         "/api/scheduler/status",
         "/api/ingest/log",
         "/api/networth/history",
+        "/api/networth/summary",
         "/api/accounts/<int:aid>/menu",
         "/api/holdings/unmapped",
         "/api/settings/notifications",

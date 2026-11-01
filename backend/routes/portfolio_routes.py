@@ -4,11 +4,11 @@ from flask import Blueprint, jsonify, request
 from pydantic import BaseModel
 
 import db
-from models import Account, AllowedPlanMenu, Holding, IngestionLog, Liability, NetWorthSnapshot
+from models import Account, AllowedPlanMenu, Holding, IngestionLog, Liability
 from routes._helpers import get_profile
 from schemas import AccountIn, ConfirmedIngest, PlanMenuItemIn, ProfileIn, ProxyMapIn
 from security import safe_filename, validate_upload
-from services import doc_reader, ingestion, institutions, xray
+from services import doc_reader, ingestion, institutions, networth, xray
 
 bp = Blueprint("portfolio", __name__, url_prefix="/api")
 
@@ -262,20 +262,12 @@ def ingest_log():
 
 @bp.get("/networth/history")
 def networth_history():
-    rows = db.session().query(NetWorthSnapshot).order_by(NetWorthSnapshot.taken_at).all()
-    return jsonify(
-        [
-            {
-                "taken_at": r.taken_at.isoformat(),
-                "total": r.total,
-                "safe_core": r.safe_core,
-                "satellite": r.satellite,
-                "dry_powder": r.dry_powder,
-                "liabilities": r.liabilities,
-            }
-            for r in rows
-        ]
-    )
+    return jsonify(networth.history(db.session()))
+
+
+@bp.get("/networth/summary")
+def networth_summary():
+    return jsonify(networth.summary(db.session(), get_profile()))
 
 
 def menu_dict(m: AllowedPlanMenu) -> dict:
