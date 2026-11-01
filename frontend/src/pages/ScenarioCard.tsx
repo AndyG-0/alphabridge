@@ -79,7 +79,7 @@ export default function ScenarioCard() {
         </ul>
       )}
       <div className="mt-3 flex items-center gap-3 text-sm">
-        <select className="border-b bg-transparent" value={kind} onChange={(e) => setKind(e.target.value)}>
+        <select aria-label="Scenario type" className="border-b bg-transparent" value={kind} onChange={(e) => setKind(e.target.value)}>
           <option value="max_spend">Max monthly spend</option>
           <option value="required_savings">Required monthly savings</option>
           <option value="earliest_age">Earliest retirement age</option>

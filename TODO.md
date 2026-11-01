@@ -33,7 +33,7 @@ Baseline (2026-10-30): 12 backend test files, ruff `E,F,I,B` only, no frontend t
   - *Acceptance:* Vitest + React Testing Library + MSW with at least one test per page rendering against mocked `/api`; ESLint (typescript-eslint, react-hooks, jsx-a11y); Prettier; `knip`; `npm audit --omit=dev`; size-limit budget; `noUncheckedIndexedAccess`; scripts `lint format:check test test:cov typecheck`.
   - *Touch:* `frontend/package.json`, `frontend/tsconfig.json`, `frontend/eslint.config.js`, `frontend/src/**/*.test.tsx`
   - *Depends:* E1
-- [ ] **E5 E2E + accessibility** — Playwright smoke per page on seeded data.
+- [x] **E5 E2E + accessibility** — Playwright smoke per page on seeded data. (Done: `frontend/e2e/smoke.spec.ts` runs every page on `python -m seed` data via `e2e/serve-backend.sh` (fresh temp SQLite, ports 5101/5199 so it never reuses another app's server), axe serious/critical = 0 on desktop + Pixel 7 projects, traces/screenshots on failure, `make e2e`, CI `e2e` job; fixed contrast (slate-500 lifted to AA), unnamed controls and unfocusable scroll regions found by axe. Left: only smoke + nav, no flow tests yet; `empty-table-header` (minor) on two heatmap corner cells.)
   - *Acceptance:* runs against `python -m seed` data; one smoke test each for Dashboard, Portfolio/Dropzone, Retirement Plan, Research Lab, Chat, Settings; `@axe-core/playwright` has zero serious violations; desktop + mobile (bottom nav) projects; traces/screenshots on failure; `make e2e`.
   - *Touch:* `frontend/e2e/`, `frontend/playwright.config.ts`, `Makefile`
   - *Depends:* E2, E4

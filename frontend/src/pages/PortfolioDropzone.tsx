@@ -195,7 +195,7 @@ function PreviewCard({
         <Badge>{p.source === 'vision' ? 'Read by AI vision' : p.source === 'ocr' ? 'Read by OCR' : 'Read by AI'}</Badge>
         <Badge tone={p.confidence === 'high' ? 'green' : p.confidence === 'medium' ? 'amber' : 'red'}>{p.confidence} confidence</Badge>
       </div>
-      <div className="overflow-x-auto">
+      <div tabIndex={0} role="region" aria-label="Scrollable table" className="overflow-x-auto">
         <table className="w-full">
           <thead className="text-left text-xs text-slate-500">
             <tr>
@@ -288,7 +288,7 @@ function DupDiff({ diff }: { diff: DuplicateDiff }) {
         {m.total_delta_pct.toFixed(1)}%)
       </p>
       {m.missing > 0 && <p className="text-xs text-red-400">Replacing removes the “only in account” holdings.</p>}
-      <div className="mt-2 overflow-x-auto">
+      <div tabIndex={0} role="region" aria-label="Scrollable table" className="mt-2 overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="text-left text-slate-500">
@@ -728,7 +728,7 @@ export default function PortfolioDropzone() {
                     {confirmDel === `a${a.id}` ? 'Click again to delete account' : 'Delete account'}
                   </button>
                 </div>
-                <div className="overflow-x-auto">
+                <div tabIndex={0} role="region" aria-label="Scrollable table" className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="text-left text-xs text-slate-500">
                       <tr>

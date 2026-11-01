@@ -17,7 +17,7 @@ export default function WithdrawalsCard() {
         Each strategy is run year by year through the {d.rules_year} federal tax brackets and the {d.aca_rules_year} ACA subsidy schedule
         {d.aca_enhanced ? ' (enhanced credits)' : ' (400% FPL cliff)'}. Lowest lifetime cost: <b>{d.strategies.find((s) => s.strategy === d.best)?.label}</b>.
       </p>
-      <div className="overflow-x-auto">
+      <div tabIndex={0} role="region" aria-label="Scrollable table" className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-slate-400">
             <tr>
@@ -48,7 +48,7 @@ export default function WithdrawalsCard() {
         </table>
       </div>
       {shown.years && (
-        <div className="mt-4 max-h-80 overflow-auto">
+        <div tabIndex={0} role="region" aria-label="Withdrawal schedule" className="mt-4 max-h-80 overflow-auto">
           <table className="w-full text-xs">
             <thead className="sticky top-0 bg-slate-900 text-left text-slate-400">
               <tr>

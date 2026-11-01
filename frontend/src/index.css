@@ -1,5 +1,10 @@
 @import 'tailwindcss';
 
+/* slate-500 on slate-950 was 3.9:1; lifted to pass WCAG AA (4.5:1) for secondary text */
+@theme {
+  --color-slate-500: #8493a8;
+}
+
 :root {
   color-scheme: dark;
 }

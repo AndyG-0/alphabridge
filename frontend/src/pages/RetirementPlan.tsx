@@ -123,7 +123,15 @@ function SeppCompare({ balance }: { balance: number }) {
     <div className="mt-4 text-sm">
       <div className="mb-1 flex items-center gap-2">
         <span className="font-medium">72(t) SEPP payment on all pre-tax balances if started at age</span>
-        <input type="number" min={35} max={59} value={age} onChange={(e) => setAge(Number(e.target.value))} className="w-16 rounded bg-slate-800 px-2 py-1" />
+        <input
+          aria-label="SEPP start age"
+          type="number"
+          min={35}
+          max={59}
+          value={age}
+          onChange={(e) => setAge(Number(e.target.value))}
+          className="w-16 rounded bg-slate-800 px-2 py-1"
+        />
       </div>
       <ul className="text-slate-400">
         {rows.map((r) => (
@@ -442,7 +450,7 @@ function Phases({ phases, spouse, basis }: { phases: Phase[]; spouse?: string; b
         {table ? 'Hide' : 'Show'} the budget for each stage
       </button>
       {table && (
-        <div className="mt-2 overflow-x-auto">
+        <div tabIndex={0} role="region" aria-label="Scrollable table" className="mt-2 overflow-x-auto">
           <table className="w-full min-w-[640px] text-right text-xs">
             <thead className="text-slate-400">
               <tr>
@@ -590,7 +598,7 @@ function DebtPayoffCard({ debts, retireYear, spouse }: { debts: DebtPayoff[]; re
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-2 overflow-x-auto">
+      <div tabIndex={0} role="region" aria-label="Scrollable table" className="mt-2 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-xs text-slate-500">
             <tr>
@@ -636,18 +644,20 @@ function Timeline({ f, spouse }: { f: Fire; spouse?: string }) {
   const items = f.timeline ?? []
   return (
     <Card title="Milestones">
-      <ol className="max-h-72 space-y-2 overflow-y-auto pr-1 text-sm">
-        {items.map((m, i) => (
-          <li key={i} className="flex items-baseline gap-3">
-            <span className="w-11 shrink-0 font-medium tabular-nums text-slate-200">{m.year}</span>
-            <span className="flex-1 text-slate-300">{m.label}</span>
-            <span className="shrink-0 text-xs text-slate-500">{agesText(m.ages, spouse)}</span>
-            <span className="hidden sm:inline">
-              <Badge tone={KIND_TONE[m.kind] ?? 'slate'}>{m.kind.toLowerCase()}</Badge>
-            </span>
-          </li>
-        ))}
-      </ol>
+      <div tabIndex={0} role="region" aria-label="Milestones timeline" className="max-h-72 overflow-y-auto pr-1">
+        <ol className="space-y-2 text-sm">
+          {items.map((m, i) => (
+            <li key={i} className="flex items-baseline gap-3">
+              <span className="w-11 shrink-0 font-medium tabular-nums text-slate-200">{m.year}</span>
+              <span className="flex-1 text-slate-300">{m.label}</span>
+              <span className="shrink-0 text-xs text-slate-500">{agesText(m.ages, spouse)}</span>
+              <span className="hidden sm:inline">
+                <Badge tone={KIND_TONE[m.kind] ?? 'slate'}>{m.kind.toLowerCase()}</Badge>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
     </Card>
   )
 }
@@ -674,7 +684,7 @@ function Health({ f, spouse }: { f: Fire; spouse?: string }) {
         </Hint>
       </p>
       {f.aca_note && <p className="mb-2 rounded-lg bg-amber-950/50 p-2 text-sm text-amber-200">{f.aca_note}</p>}
-      <div className="overflow-x-auto">
+      <div tabIndex={0} role="region" aria-label="Scrollable table" className="overflow-x-auto">
         <table className="w-full min-w-[620px] text-right text-sm">
           <thead className="text-xs text-slate-400">
             <tr>

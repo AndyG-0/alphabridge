@@ -24,7 +24,7 @@ export default function RothCard() {
           'No mode beats skipping conversions with these inputs.'
         )}
       </p>
-      <div className="overflow-x-auto">
+      <div tabIndex={0} role="region" aria-label="Scrollable table" className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-slate-400">
             <tr>
@@ -55,7 +55,7 @@ export default function RothCard() {
         </table>
       </div>
       {shown && shown.total_converted > 0 && (
-        <div className="mt-3 max-h-64 overflow-auto text-sm">
+        <div tabIndex={0} role="region" aria-label="Roth ladder by year" className="mt-3 max-h-64 overflow-auto text-sm">
           <table className="w-full">
             <thead className="text-left text-slate-400">
               <tr>

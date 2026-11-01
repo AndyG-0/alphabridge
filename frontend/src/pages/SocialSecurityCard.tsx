@@ -19,7 +19,7 @@ export default function SocialSecurityCard() {
         )}
         . {d.gain_vs_current > 1 ? `That is worth about ${usd(d.gain_vs_current)} more than your current choice.` : 'That matches your current choice.'}
       </p>
-      <div className="overflow-x-auto">
+      <div tabIndex={0} role="region" aria-label="Scrollable table" className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-slate-400">
             <tr>

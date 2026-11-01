@@ -31,3 +31,6 @@ statements/
 *.pdf
 *.xlsx
 backend/sqlite:/
+
+frontend/playwright-report/
+frontend/test-results/

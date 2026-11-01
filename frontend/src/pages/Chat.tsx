@@ -197,7 +197,7 @@ export default function Chat() {
             placeholder="Ask about your plan…"
             className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
           />
-          <Button type="submit" disabled={busy || !input.trim()}>
+          <Button type="submit" aria-label="Send message" disabled={busy || !input.trim()}>
             <Send size={16} />
           </Button>
         </form>
