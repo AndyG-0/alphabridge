@@ -295,7 +295,7 @@ TOOLS = [
         "Entered 401(k) plan-menu funds (ticker, name, asset class, expense ratio) for one account.",
         _obj({"account_id": {"type": "integer"}}, ["account_id"]),
     ),
-    ("get_ingestion_log", "Recent file imports: filename, parser, rows, status, message.", _obj({"limit": {"type": "integer"}})),
+    ("get_ingestion_log", "Recent file imports: filename, parser, rows, status (OK/ERROR/UNDONE), message.", _obj({"limit": {"type": "integer"}})),
     (
         "get_data_gaps",
         "Deterministic checklist of missing or suspicious inputs (zero income/expenses/Social Security, no spouse data, accounts without "
@@ -668,7 +668,15 @@ def _plan_menu(a: dict) -> list[dict]:
 def _ingest_log(a: dict) -> list[dict]:
     rows = db.session().query(IngestionLog).order_by(IngestionLog.id.desc()).limit(min(int(a.get("limit") or 10), 50))
     return [
-        {"filename": r.filename, "parser": r.parser, "rows": r.rows_parsed, "status": r.status, "message": r.message, "at": r.created_at.isoformat()}
+        {
+            "filename": r.filename,
+            "parser": r.parser,
+            "rows": r.rows_parsed,
+            "status": r.status,
+            "message": r.message,
+            "at": r.created_at.isoformat(),
+            "undone": r.undone_at is not None,
+        }
         for r in rows
     ]
 

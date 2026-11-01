@@ -182,7 +182,7 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
   - *Acceptance:* each importer has anonymized golden fixtures under `backend/tests/fixtures/` and a `validate_parse` arithmetic check; export instructions added to `services/institutions.py`; generic CSV mapper with saved templates.
   - *Touch:* `backend/services/ingestion.py`, `backend/services/institutions.py`, `backend/tests/fixtures/`
   - *Depends:* E6
-- [ ] **D2 Ingestion robustness** — safe re-imports.
+- [x] **D2 Ingestion robustness** — safe re-imports. (Done against the existing parsers; D1's new importers are still open. `apply_parse` is idempotent via an order-independent rows hash (an unchanged account is skipped and not re-logged); `IngestionLog` keeps `batch_id`, `content_hash` and a pre-import copy so `POST /api/ingest/<id>/undo` restores the whole upload (removing accounts it created; only the newest live import per account is undoable); per-row `row_errors` (non-numeric, negative, shares×price mismatch) on imports and on `dry_run=1` previews; `services/corporate_actions.py` splits/reverse splits and spin-off basis allocation via `POST /api/holdings/<id>/split|spinoff`; CSV `Currency` column converted to USD with cached FX (`market_data.fx_rate`), native currency/rate kept on `Holding`; Import history card with Undo on Portfolio. Left: PDF/LLM-read statements don't carry currency or row errors; splits/spin-offs are manual (no automatic detection from statement diffs).)
   - *Acceptance:* idempotent re-import (dedupe), undo import, per-row errors in preview, split/spinoff adjustments, multi-currency, `IngestionLog` audit view in UI.
   - *Touch:* `backend/services/ingestion.py`, `backend/routes/portfolio_routes.py`, frontend
   - *Depends:* D1

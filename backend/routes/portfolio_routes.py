@@ -8,7 +8,7 @@ from models import Account, AllowedPlanMenu, Holding, IngestionLog, Liability
 from routes._helpers import get_profile
 from schemas import AccountIn, ConfirmedIngest, PlanMenuItemIn, ProfileIn, ProxyMapIn
 from security import safe_filename, validate_upload
-from services import doc_reader, ingestion, institutions, networth, xray
+from services import corporate_actions, doc_reader, ingestion, institutions, networth, xray
 
 bp = Blueprint("portfolio", __name__, url_prefix="/api")
 
@@ -200,8 +200,8 @@ def ingest():
             return jsonify(error=str(e)), 400
         return jsonify(ingestion.apply_pension(result, name, pension_owner)), 201
     if not result.rows:
-        return jsonify(error="No holdings found in file", warnings=result.warnings), 422
-    if result.needs_review:
+        return jsonify(error="No holdings found in file", warnings=result.warnings, row_errors=result.row_errors), 422
+    if result.needs_review or request.form.get("dry_run") == "1":
         return jsonify(
             preview=True,
             parser=result.parser,
@@ -210,6 +210,7 @@ def ingest():
             checks=result.checks,
             warnings=result.warnings,
             filename=name,
+            row_errors=result.row_errors,
             rows=[_row_dict(r) for r in result.rows],
         ), 200
     if account_id is None:
@@ -243,7 +244,9 @@ def portfolio_xray():
 
 @bp.get("/ingest/log")
 def ingest_log():
-    rows = db.session().query(IngestionLog).order_by(IngestionLog.id.desc()).limit(50).all()
+    s = db.session()
+    rows = s.query(IngestionLog).order_by(IngestionLog.id.desc()).limit(50).all()
+    names = {a.id: a.name for a in s.query(Account).all()}
     return jsonify(
         [
             {
@@ -254,10 +257,70 @@ def ingest_log():
                 "status": r.status,
                 "message": r.message,
                 "created_at": r.created_at.isoformat(),
+                "account_id": r.account_id,
+                "account": names.get(r.account_id),
+                "batch_id": r.batch_id,
+                "content_hash": r.content_hash[:12],
+                "can_undo": ingestion.can_undo(s, r),
+                "undone_at": r.undone_at.isoformat() if r.undone_at else None,
             }
             for r in rows
         ]
     )
+
+
+@bp.post("/ingest/<int:log_id>/undo")
+def ingest_undo(log_id):
+    try:
+        return jsonify(ingestion.undo_import(db.session(), log_id))
+    except LookupError as e:
+        return jsonify(error=str(e)), 404
+    except ValueError as e:
+        return jsonify(error=str(e)), 409
+
+
+class SplitIn(BaseModel):
+    ratio: float
+
+
+class SpinoffIn(BaseModel):
+    symbol: str
+    shares: float
+    basis_fraction: float
+    price: float = 0.0
+    name: str = ""
+
+
+@bp.post("/holdings/<int:hid>/split")
+def holding_split(hid):
+    s = db.session()
+    h = s.get(Holding, hid)
+    if h is None:
+        return jsonify(error="holding not found"), 404
+    body = SplitIn.model_validate(request.get_json(force=True))
+    try:
+        out = corporate_actions.split(h, body.ratio)
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    s.commit()
+    return jsonify(out)
+
+
+@bp.post("/holdings/<int:hid>/spinoff")
+def holding_spinoff(hid):
+    s = db.session()
+    h = s.get(Holding, hid)
+    if h is None:
+        return jsonify(error="holding not found"), 404
+    b = SpinoffIn.model_validate(request.get_json(force=True))
+    try:
+        out = corporate_actions.spinoff(s, h, b.symbol, b.shares, b.basis_fraction, b.price, b.name)
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    s.flush()
+    ingestion.snapshot_net_worth(s)
+    s.commit()
+    return jsonify(out), 201
 
 
 @bp.get("/networth/history")

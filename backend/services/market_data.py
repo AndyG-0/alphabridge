@@ -58,6 +58,18 @@ def get_closes(symbol: str, period: str = "2y", ttl: int = 6 * 3600) -> list[flo
     return closes
 
 
+def fx_rate(currency: str) -> float | None:
+    """USD per one unit of `currency` (cached via the price cache); None if it can't be fetched."""
+    cur = currency.strip().upper()
+    if cur in ("", "USD"):
+        return 1.0
+    try:
+        closes = get_closes(f"{cur}USD=X", period="5d", ttl=6 * 3600)
+    except Exception:
+        return None
+    return closes[-1] if closes else None
+
+
 def get_quote(symbol: str) -> dict:
     closes = get_closes(symbol, "1y")
     return {"symbol": symbol, "price": closes[-1] if closes else None}

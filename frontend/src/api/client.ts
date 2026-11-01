@@ -521,11 +521,34 @@ export interface Pension {
 }
 export type PensionEdit = Partial<Pick<Pension, 'start_age' | 'payout' | 'interest_credit_rate' | 'pay_credit_pct' | 'covered_pay_annual'>>
 
+export interface RowError {
+  line: number
+  symbol: string
+  level: 'error' | 'warn'
+  error: string
+}
 export interface IngestResult {
   pension?: Pension
   rows: number
   needs_mapping: string[]
   parser: string
+  unchanged?: number[]
+  accounts?: number[]
+  row_errors?: RowError[]
+}
+export interface ImportLogEntry {
+  id: number
+  filename: string
+  parser: string
+  rows: number
+  status: string
+  message: string
+  created_at: string
+  account: string | null
+  batch_id: string
+  content_hash: string
+  can_undo: boolean
+  undone_at: string | null
 }
 export interface PreviewRow {
   symbol: string
@@ -566,6 +589,7 @@ export interface IngestPreview {
   filename: string
   checks: { level: 'ok' | 'warn' | 'fail'; message: string }[]
   warnings: string[]
+  row_errors?: RowError[]
   rows: PreviewRow[]
 }
 
@@ -678,6 +702,8 @@ export const api = {
     fd.append('allow_duplicate', '1') // the user just reviewed this data
     return req<IngestResult>('/ingest', { method: 'POST', body: fd })
   },
+  importLog: () => req<ImportLogEntry[]>('/ingest/log'),
+  undoImport: (id: number) => req<{ undone: number[] }>(`/ingest/${id}/undo`, json('POST')),
   chatSessions: () => req<ChatSession[]>('/chat/sessions'),
   createChatSession: () => req<ChatSessionFull>('/chat/sessions', json('POST')),
   chatSession: (id: number) => req<ChatSessionFull>(`/chat/sessions/${id}`),

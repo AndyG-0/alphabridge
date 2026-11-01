@@ -2,8 +2,10 @@
 
 import contextlib
 import csv
+import hashlib
 import io
 import re
+import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 
@@ -23,6 +25,7 @@ ALIASES = {
     "price": ["last price", "price", "unit value", "share price", "nav", "unit price"],
     "value": ["current value", "value", "market value", "balance", "ending balance", "total value", "current balance"],
     "cost": ["cost basis total", "cost basis", "total cost basis", "cost"],
+    "currency": ["currency", "currency code"],
 }
 
 
@@ -37,6 +40,8 @@ class ParsedRow:
     asset_class: str = "US_EQUITY"
     account_name: str | None = None
     needs_mapping: bool = False
+    currency: str = "USD"  # statement currency; price/value/cost above are already converted to USD
+    fx_rate: float = 1.0
 
 
 @dataclass
@@ -72,6 +77,7 @@ class ParseResult:
     source: str = "csv"  # text | ocr | vision | csv
     checks: list[dict] = field(default_factory=list)
     confidence: str = "high"
+    row_errors: list[dict] = field(default_factory=list)  # {"line", "symbol", "level": error|warn, "error"}; errors were skipped
 
     @property
     def needs_review(self) -> bool:
@@ -92,6 +98,18 @@ def money(v) -> float:
     except ValueError:
         return 0.0
     return -x if neg else x
+
+
+def bad_number(v) -> bool:
+    """A non-empty cell that is not a number (money() would silently read it as 0)."""
+    s = str(v or "").strip().replace("$", "").replace(",", "").replace("%", "").strip("()")
+    if s in ("", "--", "n/a", "N/A"):
+        return False
+    try:
+        float(s)
+    except ValueError:
+        return True
+    return False
 
 
 def guess_asset_class(symbol: str, name: str) -> str:
@@ -171,7 +189,14 @@ def _parse_bank_activity(rows: list[list[str]], hi: int, res: ParseResult) -> Pa
     return res
 
 
-def parse_csv(text: str) -> ParseResult:
+def _default_fx(currency: str) -> float | None:
+    from services import market_data
+
+    return market_data.fx_rate(currency)
+
+
+def parse_csv(text: str, fx=None) -> ParseResult:
+    """`fx(currency) -> USD per unit` converts non-USD statements; defaults to the cached market-data lookup."""
     text = text.lstrip("﻿")
     rows = list(csv.reader(io.StringIO(text)))
     res = ParseResult(parser="csv")
@@ -188,23 +213,42 @@ def parse_csv(text: str) -> ParseResult:
         i = cols.get(key)
         return r[i].strip() if i is not None and i < len(r) else ""
 
-    for r in rows[hi + 1 :]:
+    for line_no, r in enumerate(rows[hi + 1 :], start=hi + 2):
         if not r or all(not c.strip() for c in r):
             if res.rows:
                 break  # blank line ends the table; the rest is disclaimers
             continue
         name, symbol = get(r, "name"), get(r, "symbol")
         value = money(get(r, "value"))
-        if not (name or symbol) or (value == 0 and not get(r, "shares")):
+        if not (name or symbol) or (value == 0 and not get(r, "shares") and not bad_number(get(r, "value"))):
             continue
         if symbol.lower().startswith("pending") or name.lower() in ("total", "account total"):
             continue
+        label = symbol.rstrip("*").upper() or name[:30]
+        if bad := [k for k in ("value", "shares", "price", "cost") if bad_number(get(r, k))]:
+            res.row_errors.append({"line": line_no, "symbol": label, "level": "error", "error": f"Not a number in: {', '.join(bad)}; row skipped"})
+            continue
         sym = symbol.rstrip("*").upper()
         shares, price = money(get(r, "shares")), money(get(r, "price"))
+        if shares < 0 or value < 0:
+            res.row_errors.append({"line": line_no, "symbol": label, "level": "error", "error": "Negative shares or value; row skipped"})
+            continue
+        cost = money(get(r, "cost"))
+        cur, rate = (get(r, "currency").upper() or "USD"), 1.0
+        if cur != "USD":
+            found = (fx or _default_fx)(cur)
+            if not found:
+                res.row_errors.append({"line": line_no, "symbol": label, "level": "error", "error": f"No USD exchange rate for {cur}; row skipped"})
+                continue
+            rate = found
+            price, value, cost = price * rate, value * rate, cost * rate
+            res.warnings.append(f"{label}: converted from {cur} at {rate:.4f} USD per {cur}")
         if not value and shares and price:
             value = shares * price
         if not price and shares:
             price = value / shares
+        if shares and price and value and abs(shares * price - value) / value > 0.05:
+            res.row_errors.append({"line": line_no, "symbol": label, "level": "warn", "error": "Shares x price differs from value by more than 5%"})
         needs_mapping = not re.fullmatch(r"[A-Z]{1,5}(\.[A-Z])?", sym) or len(sym) > 5
         if needs_mapping:
             sym = re.sub(r"[^A-Z0-9]+", "-", (name or symbol).upper()).strip("-")[:38]
@@ -215,10 +259,12 @@ def parse_csv(text: str) -> ParseResult:
                 shares=shares,
                 price=price,
                 market_value=value,
-                cost_basis_total=money(get(r, "cost")),
+                cost_basis_total=cost,
                 asset_class=guess_asset_class(sym, name),
                 account_name=get(r, "account") or None,
                 needs_mapping=needs_mapping and guess_asset_class(sym, name) != "MONEY_MARKET",
+                currency=cur,
+                fx_rate=rate,
             )
         )
     return res
@@ -547,10 +593,24 @@ def resolve_accounts(result: ParseResult, owner: str | None = None) -> None:
         match_account(s, nm, owner)
 
 
+def rows_hash(items) -> str:
+    """Order-independent fingerprint of positions (symbol, shares, value, basis); works on ParsedRow and Holding alike."""
+    parts = sorted(f"{i.symbol}|{i.shares:.4f}|{i.market_value:.2f}|{i.cost_basis_total:.2f}" for i in items)
+    return hashlib.sha256("\n".join(parts).encode()).hexdigest()
+
+
+def _holding_dict(h: Holding) -> dict:
+    d = {c.name: getattr(h, c.name) for c in Holding.__table__.columns if c.name not in ("id", "account_id")}
+    d["last_updated"] = h.last_updated.isoformat() if h.last_updated else None
+    return d
+
+
 def apply_parse(result: ParseResult, filename: str, account_id: int | None, owner: str | None = None) -> dict:
-    """Snapshot-replace holdings per account, log the import, record a net-worth snapshot."""
+    """Snapshot-replace holdings per account, log the import (with a pre-import copy for undo), record a net-worth snapshot.
+    Idempotent: an account whose holdings already equal the import is left untouched and not re-logged."""
     s = db.session()
     groups: dict[int, list[ParsedRow]] = {}
+    created: set[int] = set()
     for row in result.rows:
         if account_id:
             acct = s.get(Account, account_id)
@@ -561,10 +621,18 @@ def apply_parse(result: ParseResult, filename: str, account_id: int | None, owne
                 acct = Account(name=nm, **(_default_account_attrs(nm) | ({"owner": owner} if owner else {})))
                 s.add(acct)
                 s.flush()
+                created.add(acct.id)
         groups.setdefault(acct.id, []).append(row)
     now = datetime.now(UTC)
+    batch = uuid.uuid4().hex
+    unchanged: list[int] = []
     for aid, rows in groups.items():
         existing = {h.symbol: h for h in s.query(Holding).filter(Holding.account_id == aid)}
+        digest = rows_hash(rows)
+        if existing and rows_hash(existing.values()) == digest:
+            unchanged.append(aid)
+            continue
+        before = [_holding_dict(h) for h in existing.values()]
         seen = set()
         for r in rows:
             seen.add(r.symbol)
@@ -574,20 +642,93 @@ def apply_parse(result: ParseResult, filename: str, account_id: int | None, owne
             h.name, h.shares, h.current_price = r.name, r.shares, r.price
             h.market_value, h.cost_basis_total = r.market_value, r.cost_basis_total
             h.asset_class, h.last_updated = r.asset_class, now
+            h.currency, h.fx_rate = r.currency, r.fx_rate
         for sym, h in existing.items():
             if sym not in seen:
                 s.delete(h)
-        s.add(IngestionLog(filename=filename, account_id=aid, parser=result.parser, rows_parsed=len(rows), status="OK", message="; ".join(result.warnings)))
+        msg = "; ".join(result.warnings)
+        s.add(
+            IngestionLog(
+                filename=filename,
+                account_id=aid,
+                parser=result.parser,
+                rows_parsed=len(rows),
+                status="OK",
+                message=msg,
+                content_hash=digest,
+                batch_id=batch,
+                before=before,
+                created_account=aid in created,
+            )
+        )
     s.flush()
-    snapshot_net_worth(s)
+    if len(unchanged) < len(groups):
+        snapshot_net_worth(s)
     s.commit()
     return {
         "parser": result.parser,
         "rows": len(result.rows),
         "accounts": list(groups),
+        "unchanged": unchanged,
+        "batch_id": batch,
         "needs_mapping": [r.symbol for r in result.rows if r.needs_mapping],
         "warnings": result.warnings,
+        "row_errors": result.row_errors,
     }
+
+
+def _latest_active_log(s, account_id: int | None):
+    return (
+        s.query(IngestionLog)
+        .filter(IngestionLog.account_id == account_id, IngestionLog.status == "OK", IngestionLog.undone_at.is_(None))
+        .order_by(IngestionLog.id.desc())
+        .first()
+    )
+
+
+def can_undo(s, log: IngestionLog) -> bool:
+    """Only the newest live import of an account can be undone (otherwise 'before' would resurrect stale data)."""
+    if log.status != "OK" or log.undone_at is not None or log.before is None or log.account_id is None:
+        return False
+    latest = _latest_active_log(s, log.account_id)
+    return latest is not None and latest.id == log.id
+
+
+def undo_import(s, log_id: int) -> dict:
+    """Undo the whole upload (batch) containing this log row: restore each account's previous holdings, or remove accounts it created."""
+    log = s.get(IngestionLog, log_id)
+    if log is None:
+        raise LookupError("import not found")
+    logs = s.query(IngestionLog).filter(IngestionLog.batch_id == log.batch_id).all() if log.batch_id else [log]
+    for lg in logs:
+        if not can_undo(s, lg):
+            raise ValueError(
+                "This import can't be undone: it was already undone, predates undo support, "
+                "or a newer import changed the same account. Undo the newer one first."
+            )
+    now = datetime.now(UTC).replace(tzinfo=None)
+    restored: list[int] = []
+    for lg in logs:
+        aid = lg.account_id
+        acct = s.get(Account, aid)
+        lg.undone_at, lg.status = now, "UNDONE"
+        if acct is None:
+            continue
+        if lg.created_account:
+            for other in s.query(IngestionLog).filter(IngestionLog.account_id == aid):
+                other.account_id = None
+            s.delete(acct)
+            continue
+        s.query(Holding).filter(Holding.account_id == aid).delete()
+        for d in lg.before or []:
+            d = dict(d)
+            d["last_updated"] = datetime.fromisoformat(d["last_updated"]) if d.get("last_updated") else now
+            s.add(Holding(account_id=aid, **d))
+        restored.append(aid)
+    s.flush()
+    snapshot_net_worth(s)
+    s.commit()
+    return {"undone": [lg.id for lg in logs], "restored_accounts": restored}
 
 
 def resolve_pension_owner(pension: ParsedPension, profile, owner: str | None) -> str:

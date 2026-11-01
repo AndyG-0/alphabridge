@@ -116,6 +116,8 @@ class Holding(Base):
     asset_class: Mapped[str] = mapped_column(String(40), default="US_EQUITY")
     proxy_ticker: Mapped[str | None] = mapped_column(String(20), nullable=True)
     last_updated: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    currency: Mapped[str] = mapped_column(String(3), default="USD")  # statement currency; amounts are stored in USD
+    fx_rate: Mapped[float] = mapped_column(Float, default=1.0)  # USD per unit of `currency` at import
     account = relationship("Account", back_populates="holdings")
 
 
@@ -129,6 +131,11 @@ class IngestionLog(Base):
     status: Mapped[str] = mapped_column(String(20), default="OK")
     message: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    content_hash: Mapped[str] = mapped_column(String(64), default="")  # hash of the imported rows (idempotency + audit)
+    batch_id: Mapped[str] = mapped_column(String(32), default="")  # one upload can touch several accounts
+    before: Mapped[list | None] = mapped_column(JSON, nullable=True)  # the account's holdings before this import (for undo)
+    created_account: Mapped[bool] = mapped_column(Boolean, default=False)  # import created the account, so undo removes it
+    undone_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class NetWorthSnapshot(Base):
