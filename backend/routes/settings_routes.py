@@ -17,6 +17,7 @@ def llm_view(cfg) -> dict:
         "fast_model": cfg.fast_model,
         "reasoning_model": cfg.reasoning_model,
         "api_base": cfg.api_base,
+        "token_budget": cfg.token_budget,
         "api_key_set": bool(cfg.api_key_encrypted or os.getenv(PROVIDER_ENV.get(cfg.provider, ""), "")),
         "providers": [*list(PROVIDER_ENV), "ollama"],
     }
@@ -35,6 +36,8 @@ def llm_put():
         v = getattr(data, k)
         if v is not None:
             setattr(cfg, k, v)
+    if data.token_budget is not None:
+        cfg.token_budget = data.token_budget
     if data.api_key:  # never blank an existing key by omission
         cfg.api_key_encrypted = encrypt(data.api_key)
     db.session().commit()

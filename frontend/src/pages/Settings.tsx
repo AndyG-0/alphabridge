@@ -298,7 +298,7 @@ export default function Settings() {
   const llm = useAsync(api.llm)
   const notif = useAsync(api.notif)
   const prof = useAsync(api.profile)
-  const [l, setL] = useState({ provider: 'anthropic', fast_model: '', reasoning_model: '', api_key: '', api_base: '' })
+  const [l, setL] = useState({ provider: 'anthropic', fast_model: '', reasoning_model: '', api_key: '', api_base: '', token_budget: 0 })
   const [n, setN] = useState({ discord_webhook: '', smtp_host: '', smtp_user: '', smtp_password: '', smtp_to: '' })
   const [p, setP] = useState<Partial<Profile>>({})
   const [msg, setMsg] = useState('')
@@ -592,6 +592,12 @@ export default function Settings() {
           <Input label="Fast model (extraction)" value={l.fast_model} onChange={(e) => setL({ ...l, fast_model: e.target.value })} />
           <Input label="Reasoning model (research)" value={l.reasoning_model} onChange={(e) => setL({ ...l, reasoning_model: e.target.value })} />
           <Input label="API base (Ollama / proxy, optional)" value={l.api_base} onChange={(e) => setL({ ...l, api_base: e.target.value })} />
+          <Input
+            label="Token budget per research run (0 = unlimited)"
+            type="number"
+            value={String(l.token_budget)}
+            onChange={(e) => setL({ ...l, token_budget: Number(e.target.value) || 0 })}
+          />
         </Row>
         <div className="mt-3 flex gap-2">
           <Button

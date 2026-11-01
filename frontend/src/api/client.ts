@@ -789,7 +789,46 @@ export type CashPlan = {
   notes: string[]
 }
 
+export type DcfGrid = {
+  symbol: string
+  discounts: number[]
+  rows: { growth: number; values: (number | null)[] }[]
+  base: number | null
+  low: number | null
+  high: number | null
+  price: number | null
+  base_upside: number | null
+  share_of_cells_above_price: number | null
+}
+export type WatchRow = {
+  id: number
+  symbol: string
+  note: string
+  buy_below: number | null
+  upside_alert: number | null
+  price: number | null
+  dcf_value: number | null
+  alerts: string[]
+}
+export type Criterion = { metric: string; op: string; value: number; text?: string; current?: number | null; triggered?: boolean | null }
+export type ThesisRow = {
+  id: number
+  symbol: string
+  thesis: string
+  status: string
+  invalidated_on: string | null
+  criteria: Criterion[]
+  broken: Criterion[]
+}
+
 export const api = {
+  dcf: (sym: string) => req<DcfGrid>(`/research/dcf/${sym}`),
+  watchlist: () => req<WatchRow[]>('/research/watchlist'),
+  addWatch: (b: { symbol: string; note?: string; buy_below?: number | null }) => req<WatchRow>('/research/watchlist', json('POST', b)),
+  deleteWatch: (id: number) => req<null>(`/research/watchlist/${id}`, json('DELETE')),
+  theses: () => req<ThesisRow[]>('/research/theses'),
+  addThesis: (b: { symbol: string; thesis: string; criteria: Criterion[] }) => req<ThesisRow>('/research/theses', json('POST', b)),
+  closeThesis: (id: number) => req<null>(`/research/theses/${id}`, json('DELETE')),
   cashPlan: () => req<CashPlan>('/planner/cash/plan'),
   saveDca: (b: { amount: number; tranches: number }) => req<NonNullable<CashPlan['dca_active']>>('/planner/cash/dca', json('POST', b)),
   clearDca: () => req<null>('/planner/cash/dca', json('DELETE')),
@@ -914,8 +953,10 @@ export const api = {
   symbolDetail: (symbol: string) => req<SymbolDetail>(`/research/symbol/${encodeURIComponent(symbol)}`),
   whatIf: (symbol: string, amount: number) => req<WhatIf>('/research/what-if', json('POST', { symbol, amount })),
   llm: () =>
-    req<{ provider: string; fast_model: string; reasoning_model: string; api_base: string; api_key_set: boolean; providers: string[] }>('/settings/llm'),
-  saveLlm: (b: Record<string, string>) => req('/settings/llm', json('PUT', b)),
+    req<{ provider: string; fast_model: string; reasoning_model: string; api_base: string; token_budget: number; api_key_set: boolean; providers: string[] }>(
+      '/settings/llm',
+    ),
+  saveLlm: (b: Record<string, string | number>) => req('/settings/llm', json('PUT', b)),
   testLlm: () => req<{ ok: boolean; reply?: string }>('/settings/llm/test', json('POST')),
   notif: () => req<{ discord_configured: boolean; smtp_host: string; smtp_to: string; smtp_user: string }>('/settings/notifications'),
   saveNotif: (b: Record<string, string>) => req('/settings/notifications', json('PUT', b)),

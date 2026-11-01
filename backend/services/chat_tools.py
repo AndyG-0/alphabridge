@@ -33,6 +33,7 @@ from services import (
     performance,
     planner,
     rebalance,
+    research_watch,
     risk,
     rmd,
     roth,
@@ -354,6 +355,26 @@ TOOLS = [
     (
         "get_cash_backtest",
         "Historical backtest (annual Damodaran data) of the cash-deployment rule vs buy-and-hold, naive DCA and T-bills (deterministic).",
+        _obj({}),
+    ),
+    (
+        "get_dcf_sensitivity",
+        "Per-share DCF value grid over growth x discount rate for a symbol (deterministic); use the range, not one number.",
+        _obj({"symbol": {"type": "string"}}, ["symbol"]),
+    ),
+    (
+        "get_insider_activity",
+        "Open-market insider buying/selling from recent Form 4 filings over the last 90 days, net value and a BUYING/SELLING/NEUTRAL signal (deterministic).",
+        _obj({"symbol": {"type": "string"}}, ["symbol"]),
+    ),
+    (
+        "get_watchlist",
+        "Watchlist with price, base DCF value and any valuation alerts that are firing (deterministic).",
+        _obj({}),
+    ),
+    (
+        "get_theses",
+        "Investment theses with their invalidation criteria checked against current data; 'broken' lists the criteria that have triggered.",
         _obj({}),
     ),
     (
@@ -874,6 +895,12 @@ HANDLERS = {
     "get_rebalance_plan": lambda a: rebalance.report(db.session(), get_profile(), float(a.get("threshold") or rebalance.DEFAULT_THRESHOLD)),
     "get_cash_plan": lambda a: _cash_plan(a),
     "get_cash_backtest": lambda a: cash_backtest.run(),
+    "get_dcf_sensitivity": lambda a: (
+        research_watch.dcf_for(str(a.get("symbol", "")).upper()) or {"error": "no positive free cash flow / share count / growth to project"}
+    ),
+    "get_watchlist": lambda a: research_watch.watchlist_view(db.session()),
+    "get_theses": lambda a: research_watch.theses_view(db.session()),
+    "get_insider_activity": lambda a: research_watch.insiders_for(str(a.get("symbol", "")).upper(), current_app.config["EDGAR_IDENTITY"]),
     "get_risk_report": lambda a: risk.report(db.session(), market_data.get_closes),
     "get_tax_lot_report": lambda a: tax_lots.report(db.session(), get_profile()),
     "suggest_lot_sale": lambda a: _suggest_lot_sale(a),

@@ -313,6 +313,7 @@ class ResearchReport(Base):
     portfolio_fit_notes: Mapped[str] = mapped_column(Text, default="")
     recommended_action: Mapped[str] = mapped_column(String(20), default="WATCHLIST")
     metrics_json: Mapped[dict] = mapped_column(JSON, default=dict)
+    input_hash: Mapped[str] = mapped_column(String(64), default="")  # sha256 of the LLM input; same symbol + hash reuses the report
 
 
 class LLMConfig(Base):
@@ -323,6 +324,7 @@ class LLMConfig(Base):
     reasoning_model: Mapped[str] = mapped_column(String(120), default="anthropic/claude-sonnet-5-5")
     api_key_encrypted: Mapped[str] = mapped_column(Text, default="")
     api_base: Mapped[str] = mapped_column(String(300), default="")
+    token_budget: Mapped[int] = mapped_column(Integer, default=0)  # estimated tokens per research run; 0 = unlimited
 
 
 class NotificationConfig(Base):
@@ -373,3 +375,27 @@ class RunSnapshot(Base):
 
     def to_dict(self) -> dict:
         return {"id": self.id, "created_at": self.created_at.isoformat(), "metrics": self.metrics, "assumptions": self.assumptions}
+
+
+class WatchlistItem(Base):
+    __tablename__ = "watchlist_item"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(20), unique=True)
+    added_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    note: Mapped[str] = mapped_column(String(500), default="")
+    buy_below: Mapped[float | None] = mapped_column(Float, nullable=True)
+    upside_alert: Mapped[float | None] = mapped_column(Float, nullable=True)  # alert when base DCF is this far above price
+    last_alerted_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+
+class ThesisRecord(Base):
+    """Why a position/watch is held, and the deterministic conditions that would invalidate it."""
+
+    __tablename__ = "thesis_record"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    symbol: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    thesis: Mapped[str] = mapped_column(Text, default="")
+    criteria_json: Mapped[list] = mapped_column(JSON, default=list)  # [{metric, op, value, text}]
+    status: Mapped[str] = mapped_column(String(12), default="ACTIVE")  # ACTIVE | INVALIDATED | CLOSED
+    invalidated_on: Mapped[date | None] = mapped_column(Date, nullable=True)

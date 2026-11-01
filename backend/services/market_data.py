@@ -277,3 +277,28 @@ def edgar_filing_context(ticker: str, identity: str, max_chars: int = 12000) -> 
     except Exception:
         pass
     return {"citation": cite, "risk_factors": risk, "mdna": mdna, "financials": fin_text}
+
+
+def insider_transactions(ticker: str, identity: str, limit: int = 25) -> list[dict]:
+    """Recent Form 4 open-market rows [{date, insider, code, shares, price}] via edgartools. Any parse problem returns what was read."""
+    from edgar import Company, set_identity
+
+    set_identity(identity)
+    rows: list[dict] = []
+    for filing in list(Company(ticker).get_filings(form="4").head(limit)):
+        try:
+            f4 = filing.obj()
+            df = f4.market_trades
+            for _, r in df.iterrows():
+                rows.append(
+                    {
+                        "date": str(r.get("Date") or r.get("date") or filing.filing_date)[:10],
+                        "insider": str(getattr(f4, "insider_name", "") or ""),
+                        "code": str(r.get("Code") or r.get("code") or "")[:1],
+                        "shares": float(r.get("Shares") or r.get("shares") or 0),
+                        "price": float(r.get("Price") or r.get("price") or 0),
+                    }
+                )
+        except Exception:
+            continue
+    return rows

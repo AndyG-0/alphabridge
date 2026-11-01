@@ -2,6 +2,7 @@ import { Fragment, useState } from 'react'
 import type { ReactNode } from 'react'
 import { api, type Report, type WhatIf } from '../api/client'
 import SymbolDetail from '../components/SymbolDetail'
+import WatchlistCard from './WatchlistCard'
 import { Badge, Button, Card, Err, Hint, Input, pct } from '../components/ui'
 import { useAsync } from '../hooks'
 
@@ -95,6 +96,7 @@ export default function ResearchLab() {
   }
   return (
     <div className="space-y-4">
+      <WatchlistCard />
       <Card title="What-if lab">
         <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto_auto] md:items-end">
           <Input label="Ticker" value={sym} onChange={(e) => setSym(e.target.value.toUpperCase())} placeholder="NVDA" />

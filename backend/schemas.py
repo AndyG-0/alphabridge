@@ -113,6 +113,7 @@ class LLMConfigIn(BaseModel):
     reasoning_model: str | None = None
     api_key: str | None = None
     api_base: str | None = None
+    token_budget: int | None = Field(default=None, ge=0, le=5_000_000)
 
 
 class NotificationConfigIn(BaseModel):

@@ -74,6 +74,7 @@ def daily_checks(app):
                 log.warning("notify failed: %s", e)
         _rebalance_alert(s, p)
         _dca_reminder(s, p)
+        _research_alerts(s)
 
 
 def _rebalance_alert(s, profile):
@@ -119,6 +120,34 @@ def _dca_reminder(s, profile):
         log.warning("notify failed: %s", e)
         return
     profile.dca_plan = {**plan, "notified": [*plan.get("notified", []), *[t["on"] for t in due]]}
+    s.commit()
+
+
+def _research_alerts(s):
+    """Valuation alerts for the watchlist (once a day per symbol) and thesis invalidation (flagged once, then stays flagged)."""
+    from datetime import date
+
+    from models import ThesisRecord, WatchlistItem
+    from services import notifier, research_watch
+
+    today = date.today()
+    fields: list[tuple[str, str]] = []
+    for row in research_watch.watchlist_view(s):
+        w = s.get(WatchlistItem, row["id"])
+        if row["alerts"] and w is not None and w.last_alerted_on != today:
+            fields.extend((row["symbol"], a) for a in row["alerts"])
+            w.last_alerted_on = today
+    for v in research_watch.theses_view(s):
+        t = s.get(ThesisRecord, v["id"])
+        if v["broken"] and t is not None and t.status == "ACTIVE":
+            t.status, t.invalidated_on = "INVALIDATED", today
+            fields.extend((v["symbol"], f"Thesis invalidated: {c.get('text') or c['metric']} ({c['current']})") for c in v["broken"])
+    if not fields:
+        return
+    try:
+        notifier.notify("Research alerts", "Watchlist valuation or thesis conditions changed.", "warn", fields)
+    except RuntimeError as e:
+        log.warning("notify failed: %s", e)
     s.commit()
 
 

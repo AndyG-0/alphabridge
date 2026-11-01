@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Line, LineChart, ResponsiveContainer, Tooltip, YAxis } from 'recharts'
 import { api, type SymbolDetail as Detail } from '../api/client'
 import { useAsync } from '../hooks'
+import DcfGrid from './DcfGrid'
 import { Badge, Bar, Err, Hint, pct, usd } from './ui'
 
 const num = (n: unknown, d = 1) => (typeof n === 'number' ? n.toFixed(d) : '—')
@@ -93,6 +94,8 @@ export default function SymbolDetail({ symbol, onClose }: { symbol: string; onCl
           <span>{usd(t.high_52w)}</span>
         </div>
       </div>
+
+      <DcfGrid symbol={symbol} />
 
       <Section title="Price & momentum">
         <Stat label="RSI (14)" hint="Relative Strength Index, 0–100. Above 70 is overbought, below 30 oversold, around 50 neutral.">
