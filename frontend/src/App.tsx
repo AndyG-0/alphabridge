@@ -1,8 +1,9 @@
-import { FlaskConical, FolderUp, Home, MessageCircle, Settings as Cog, Sunset } from 'lucide-react'
+import { FlaskConical, FolderUp, Home, MessageCircle, Moon, Settings as Cog, Sun, Sunset } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
 import { setToken } from './api/client'
 import { Button, Input } from './components/ui'
+import { useTheme } from './lib/theme'
 import Chat from './pages/Chat'
 import Dashboard from './pages/Dashboard'
 import PortfolioDropzone from './pages/PortfolioDropzone'
@@ -38,6 +39,7 @@ function Login({ onDone }: { onDone: () => void }) {
 }
 
 export default function App() {
+  const [theme, toggleTheme] = useTheme()
   const [locked, setLocked] = useState(false)
   const [epoch, setEpoch] = useState(0)
   useEffect(() => {
@@ -73,6 +75,15 @@ export default function App() {
             {label}
           </NavLink>
         ))}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+          className="flex flex-none flex-col items-center gap-1 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 md:mt-auto md:flex-row md:gap-3 md:rounded-xl md:text-sm"
+        >
+          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+          <span className="hidden md:inline">{theme === 'light' ? 'Dark' : 'Light'}</span>
+        </button>
       </nav>
       <main className="mx-auto w-full max-w-6xl flex-1 p-4 pb-24 md:pb-6" key={epoch}>
         <Routes>

@@ -207,7 +207,7 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
 
 ## Track U — UX and product
 
-- [ ] **U1 shadcn/ui adoption** — spec says shadcn, code has a hand-rolled `ui.tsx`.
+- [x] **U1 shadcn/ui adoption** — spec says shadcn, code has a hand-rolled `ui.tsx`. (Done: shadcn setup (`components.json`, `lib/utils.ts` `cn`, `class-variance-authority`, `tailwind-merge`, Radix Slot/Popover, `tw-animate-css`); primitives in `components/ui/` (Button, Card, Input, Badge, Popover) and `components/ui.tsx` re-implemented on them with unchanged signatures so pages are untouched; `Hint` is now a Radix popover (click/tap/keyboard, Esc, focus handling) instead of CSS hover; shadcn tokens in `index.css`; light + dark themes (slate scale and tinted accents remapped under `[data-theme=light]`, no-flash script in `index.html`, nav toggle persisted in localStorage, defaults to the OS preference); axe e2e now runs every page in both themes on desktop + mobile; unit tests for primitives and theme. Left: full page-level migration is U7; chart colors are still hard-coded hex (U3).)
   - *Acceptance:* migrate components incrementally; light/dark; keyboard navigation; axe clean (E5).
   - *Touch:* `frontend/src/components/`
   - *Depends:* E4
@@ -231,6 +231,10 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
   - *Acceptance:* offline shell, mobile polish, privacy mode (mask balances), i18n-ready strings; per-user data-scoping tests; optional passkey/OIDC login in place of the shared token.
   - *Touch:* `frontend/public/sw.js`, `backend/app.py`, `backend/models.py`
   - *Depends:* E9
+- [ ] **U7 Full shadcn page migration** — follow-up to U1, which only moved the shared primitives.
+  - *Acceptance:* page-level markup uses shadcn components: native `<select>` → Select, ad-hoc tables → Table, hand-rolled forms/dialogs → Form/Dialog/Tabs/Switch/Tooltip; no raw `border-slate-*`/`bg-slate-*` pairs left for surfaces (use tokens); axe clean in both themes; existing vitest and e2e pass unchanged.
+  - *Touch:* `frontend/src/pages/`, `frontend/src/components/`
+  - *Depends:* U1
 
 ---
 

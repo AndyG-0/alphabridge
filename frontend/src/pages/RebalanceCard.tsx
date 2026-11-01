@@ -126,7 +126,7 @@ export default function RebalanceCard() {
               ))}
             </div>
             <div className="flex items-center gap-3">
-              <button onClick={save} disabled={Math.abs(sum - 100) > 1} className="rounded bg-sky-600 px-3 py-1 disabled:opacity-40">
+              <button onClick={save} disabled={Math.abs(sum - 100) > 1} className="rounded bg-sky-600 text-white px-3 py-1 disabled:opacity-40">
                 Save target
               </button>
               <button onClick={() => setEdit(null)} className="text-xs text-slate-400">

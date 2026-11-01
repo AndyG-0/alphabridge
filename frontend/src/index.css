@@ -1,14 +1,80 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
-/* slate-500 on slate-950 was 3.9:1; lifted to pass WCAG AA (4.5:1) for secondary text */
+/*
+ * Theming. The app is written against Tailwind's slate scale (dark by default), so light mode
+ * remaps the scale and the tinted accent shades under [data-theme='light'] rather than
+ * touching every class. shadcn tokens below point at the same scale.
+ */
 @theme {
-  --color-slate-500: #8493a8;
+  --color-slate-500: #8493a8; /* slate-500 on slate-950 was 3.9:1; lifted to pass WCAG AA */
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 }
 
 :root {
   color-scheme: dark;
+  --background: var(--color-slate-950);
+  --foreground: var(--color-slate-100);
+  --card: color-mix(in srgb, var(--color-slate-900) 70%, transparent);
+  --popover: var(--color-slate-900);
+  --primary: var(--color-emerald-500);
+  --primary-foreground: #020617;
+  --muted-foreground: var(--color-slate-400);
+  --accent: var(--color-slate-800);
+  --border: var(--color-slate-800);
+  --input: var(--color-slate-700);
+  --ring: var(--color-emerald-400);
 }
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-slate-50: #020617;
+  --color-slate-100: #0f172a;
+  --color-slate-200: #1e293b;
+  --color-slate-300: #334155;
+  --color-slate-400: #475569;
+  --color-slate-500: #5b6b82;
+  --color-slate-600: #94a3b8;
+  --color-slate-700: #cbd5e1;
+  --color-slate-800: #e2e8f0;
+  --color-slate-900: #f1f5f9;
+  --color-slate-950: #f8fafc;
+  --color-emerald-300: #065f46;
+  --color-emerald-400: #047857;
+  --color-emerald-900: #d1fae5;
+  --color-emerald-950: #ecfdf5;
+  --color-amber-200: #78350f;
+  --color-amber-300: #92400e;
+  --color-amber-400: #b45309;
+  --color-amber-900: #fef3c7;
+  --color-amber-950: #fffbeb;
+  --color-red-300: #991b1b;
+  --color-red-400: #b91c1c;
+  --color-red-900: #fee2e2;
+  --color-red-950: #fef2f2;
+  --color-rose-400: #be123c;
+  --color-sky-400: #0369a1;
+  --primary: var(--color-emerald-700);
+  --primary-foreground: #ffffff;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --ring: var(--color-emerald-600);
+}
+
 body {
-  @apply bg-slate-950 text-slate-100 antialiased;
+  @apply bg-background text-foreground antialiased;
   padding-bottom: env(safe-area-inset-bottom);
 }
