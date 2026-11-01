@@ -95,6 +95,7 @@ def simulate_fire(inp: FireInputs, n_sims: int = 5000, seed: int | None = 42) ->
     bridge_funded_at_retire = None
     infl_factor = 1.0
     path_median = []
+    path_bands: list[dict[str, float]] = []
     s_t = np.log1p(inp.mu_taxable) - 0.5 * inp.sigma_taxable**2
     s_p = np.log1p(inp.mu_pretax) - 0.5 * inp.sigma_pretax**2
 
@@ -166,7 +167,10 @@ def simulate_fire(inp: FireInputs, n_sims: int = 5000, seed: int | None = 42) ->
             bridge_fail |= failed_now & (age < first_unlock)
             alive &= ~failed_now
         infl_factor *= 1 + inp.inflation
-        path_median.append((age, float(np.median((tax + pre + pre_s + pre_o) / infl_factor))))
+        real = (tax + pre + pre_s + pre_o) / infl_factor
+        path_median.append((age, float(np.median(real))))
+        q = np.percentile(real, [10, 25, 75, 90])
+        path_bands.append({"p10": float(q[0]), "p25": float(q[1]), "p75": float(q[2]), "p90": float(q[3])})
     final_real = (tax + pre + pre_s + pre_o) / infl_factor
     return {
         "success_rate": float(alive.mean()),
@@ -176,6 +180,7 @@ def simulate_fire(inp: FireInputs, n_sims: int = 5000, seed: int | None = 42) ->
         "p90_final_real": float(np.percentile(final_real, 90)),
         "median_bridge_capital_at_retirement": bridge_funded_at_retire or float(np.median(tax)),
         "median_path_real": path_median,
+        "path_bands_real": path_bands,
         "n_sims": n_sims,
         "guardrail_cut_rate": float(cut_ever.mean()) if inp.guardrails else None,
     }

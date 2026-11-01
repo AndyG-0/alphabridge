@@ -350,6 +350,20 @@ export default function Settings() {
             onChange={num('monthly_expenses_retirement')}
           />
           <Input label="Monthly savings" type="number" value={p.monthly_contribution ?? ''} onChange={num('monthly_contribution')} />
+          <Input
+            label="Employer 401(k) match: $ per $1 deferred (e.g. 0.5)"
+            type="number"
+            step="0.05"
+            value={p.employer_match_rate ?? ''}
+            onChange={num('employer_match_rate')}
+          />
+          <Input
+            label="Match applies to first % of pay (decimal, e.g. 0.06)"
+            type="number"
+            step="0.005"
+            value={p.employer_match_cap_pct ?? ''}
+            onChange={num('employer_match_cap_pct')}
+          />
           <Input label="Emergency fund (months)" type="number" value={p.emergency_fund_target_months ?? ''} onChange={num('emergency_fund_target_months')} />
           <Input
             label="Money market yield (decimal, e.g. 0.046)"

@@ -1,9 +1,22 @@
 {
+  "id": "/",
   "name": "AlphaBridge",
   "short_name": "AlphaBridge",
+  "description": "Self-hosted early-retirement planner and portfolio research",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#0b1220",
   "theme_color": "#0b1220",
-  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+  "categories": ["finance", "productivity"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Next actions", "url": "/actions", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
+    { "name": "Retirement plan", "url": "/plan", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
+    { "name": "Ask AI", "url": "/chat", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] }
+  ]
 }

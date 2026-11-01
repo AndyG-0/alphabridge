@@ -55,12 +55,17 @@ export interface ChatSession {
   title_source: 'auto' | 'user'
   updated_at: string
   message_count?: number
+  scenario?: string
+  memory?: string
 }
 export interface ChatMsg {
   id: number
   role: 'user' | 'assistant'
   content: string
   tools: string[]
+  footer?: string
+  prompt_version?: string
+  citations?: { ref: string; ok: boolean }[]
 }
 export interface ChatSessionFull extends ChatSession {
   messages: ChatMsg[]
@@ -78,6 +83,31 @@ export interface Holding {
   current_price: number
   cost_basis_total: number
 }
+export interface OnboardingInput {
+  key: string
+  label: string
+  weight: number
+  filled: boolean
+  improves: string
+  where: string
+}
+export interface OnboardingStep {
+  id: 'household' | 'accounts' | 'upload' | 'goals' | 'plan'
+  title: string
+  blurb: string
+  done: boolean
+  skipped: boolean
+}
+export interface Onboarding {
+  current: OnboardingStep['id']
+  steps: OnboardingStep[]
+  completed: boolean
+  dismissed: boolean
+  show: boolean
+  first_run: boolean
+  completeness: { score: number; inputs: OnboardingInput[]; next_best: { key: string; label: string; improves: string; where: string } | null }
+}
+
 export interface Account {
   id: number
   name: string
@@ -127,6 +157,8 @@ export interface NetWorthSummary {
   assumptions: { annual_return: number; monthly_contribution: number; baseline: string | null }
 }
 export interface Profile {
+  name: string
+  tax_filing_status: 'SINGLE' | 'MFJ'
   birth_date: string
   spouse_birth_date: string | null
   current_age: number
@@ -166,6 +198,8 @@ export interface Profile {
   ltc_years: number
   ltc_start_age: number
   guardrails_enabled: boolean
+  employer_match_rate: number
+  employer_match_cap_pct: number
 }
 export type Ages = { SELF: number; SPOUSE?: number }
 export interface Phase {
@@ -221,6 +255,43 @@ export interface HealthYear {
   over_cliff: boolean
   cliff_magi: number | null
 }
+export interface FirePathPoint {
+  year: number
+  ages: Ages
+  value: number
+  p10: number
+  p25: number
+  p75: number
+  p90: number
+}
+export interface BracketFill {
+  year: number
+  status: string
+  magi: number
+  standard_deduction: number
+  taxable_income: number
+  tax: number
+  marginal_rate: number
+  bands: { from: number; to: number | null; rate: number; filled: number }[]
+  source_url: string | null
+  retrieved_on: string | null
+}
+export interface CashFlow {
+  year: number
+  gross_income: number
+  effective_tax_rate: number
+  nodes: string[]
+  links: { source: string; target: string; value: number }[]
+  shortfall: number
+  note: string
+}
+export interface AcaSchedule {
+  rules_year: number
+  enhanced: boolean
+  fpl: number
+  cliff_magi: number | null
+  points: { fpl_ratio: number; magi: number; net_premium: number; credit: number; medicaid: boolean }[]
+}
 export interface Fire {
   success_rate: number
   bridge_success_rate: number
@@ -237,7 +308,7 @@ export interface Fire {
   target_success_rate: number
   guardrail_cut_rate: number | null
   people: { key: 'SELF' | 'SPOUSE'; name: string; age_now: number; retire_age: number }[]
-  path: { year: number; ages: Ages; value: number }[]
+  path: FirePathPoint[]
   sustainable_spend_monthly?: number
   sustainable_spend_at_earliest_monthly?: number | null
   planned_spend_monthly?: number
@@ -463,6 +534,7 @@ export interface Withdrawals {
   aca_rules_year: number
   aca_enhanced: boolean
   starting_balances: { taxable: number; pretax: number; roth: number }
+  aca_schedule?: AcaSchedule
 }
 
 export interface RmdRow {
@@ -841,7 +913,31 @@ export type ThesisRow = {
   broken: Criterion[]
 }
 
+export interface ActionItem {
+  key: string
+  kind: string
+  title: string
+  detail: string
+  priority: number
+  where: string
+  dollars: number | null
+  status: 'open' | 'snoozed' | 'done'
+  snooze_until: string | null
+}
+export interface ActionFeed {
+  items: ActionItem[]
+  hidden: number
+  high_priority: number
+}
+
 export const api = {
+  actions: (all = false) => req<ActionFeed>(`/actions${all ? '?all=1' : ''}`),
+  actionSnooze: (key: string, days = 7) => req<{ ok: boolean }>(`/actions/${encodeURIComponent(key)}/snooze`, json('POST', { days })),
+  actionDone: (key: string) => req<{ ok: boolean }>(`/actions/${encodeURIComponent(key)}/done`, json('POST', {})),
+  actionReopen: (key: string) => req<{ ok: boolean }>(`/actions/${encodeURIComponent(key)}/reopen`, json('POST', {})),
+  onboarding: () => req<Onboarding>('/onboarding'),
+  saveOnboarding: (b: { step?: OnboardingStep['id']; skip?: OnboardingStep['id']; completed?: boolean; dismissed?: boolean }) =>
+    req<Onboarding>('/onboarding', json('PUT', b)),
   dcf: (sym: string) => req<DcfGrid>(`/research/dcf/${sym}`),
   watchlist: () => req<WatchRow[]>('/research/watchlist'),
   addWatch: (b: { symbol: string; note?: string; buy_below?: number | null }) => req<WatchRow>('/research/watchlist', json('POST', b)),
@@ -935,6 +1031,8 @@ export const api = {
   savings: () => req<SavingsPlan>('/planner/savings'),
   socialSecurity: () => req<SsGrid>('/planner/social-security'),
   withdrawals: () => req<Withdrawals>('/planner/withdrawals'),
+  chartBrackets: (magi: number, year?: number) => req<BracketFill>(`/charts/brackets?magi=${magi}${year ? `&year=${year}` : ''}`),
+  chartCashflow: () => req<CashFlow>('/charts/cashflow'),
   ingest: (file: File, accountId?: number, allowDuplicate = false, owner?: Owner) => {
     const fd = new FormData()
     fd.append('file', file)
@@ -984,6 +1082,7 @@ export const api = {
   createChatSession: () => req<ChatSessionFull>('/chat/sessions', json('POST')),
   chatSession: (id: number) => req<ChatSessionFull>(`/chat/sessions/${id}`),
   renameChatSession: (id: number, title: string) => req<ChatSession>(`/chat/sessions/${id}`, json('PATCH', { title })),
+  updateChatSession: (id: number, b: { scenario?: string; memory?: string }) => req<ChatSession>(`/chat/sessions/${id}`, json('PATCH', b)),
   deleteChatSession: (id: number) => req<null>(`/chat/sessions/${id}`, json('DELETE')),
   sendChat: (id: number, content: string) =>
     req<{ session: ChatSession; user: ChatMsg; assistant: ChatMsg }>(`/chat/sessions/${id}/messages`, json('POST', { content })),

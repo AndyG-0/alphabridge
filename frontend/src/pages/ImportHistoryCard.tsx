@@ -20,7 +20,7 @@ export default function ImportHistoryCard({ version, onChanged }: { version: num
   return (
     <Card title="Import history">
       <Err error={err ?? log.error} />
-      <div className="overflow-x-auto">
+      <div tabIndex={0} role="region" aria-label="Scrollable table" className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead className="text-slate-400">
             <tr>

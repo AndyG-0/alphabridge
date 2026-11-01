@@ -111,7 +111,7 @@ export default function CashPlanCard() {
                 Today’s signal suggests {usd(d.dca.amount)} in {d.dca.tranches} tranches ({usd(d.dca.schedule[0].amount)} each, monthly).
               </p>
               <button
-                className="mt-1 rounded bg-sky-600 px-2 py-1 text-xs"
+                className="mt-1 rounded bg-sky-600 text-white px-2 py-1 text-xs"
                 onClick={() => run(() => api.saveDca({ amount: d.dca!.amount, tranches: d.dca!.tranches }))}
               >
                 Save schedule &amp; remind me

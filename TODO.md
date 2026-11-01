@@ -33,7 +33,7 @@ Baseline (2026-10-30): 12 backend test files, ruff `E,F,I,B` only, no frontend t
   - *Acceptance:* Vitest + React Testing Library + MSW with at least one test per page rendering against mocked `/api`; ESLint (typescript-eslint, react-hooks, jsx-a11y); Prettier; `knip`; `npm audit --omit=dev`; size-limit budget; `noUncheckedIndexedAccess`; scripts `lint format:check test test:cov typecheck`.
   - *Touch:* `frontend/package.json`, `frontend/tsconfig.json`, `frontend/eslint.config.js`, `frontend/src/**/*.test.tsx`
   - *Depends:* E1
-- [ ] **E5 E2E + accessibility** — Playwright smoke per page on seeded data.
+- [x] **E5 E2E + accessibility** — Playwright smoke per page on seeded data. (Done: `frontend/e2e/smoke.spec.ts` runs every page on `python -m seed` data via `e2e/serve-backend.sh` (fresh temp SQLite, ports 5101/5199 so it never reuses another app's server), axe serious/critical = 0 on desktop + Pixel 7 projects, traces/screenshots on failure, `make e2e`, CI `e2e` job; fixed contrast (slate-500 lifted to AA), unnamed controls and unfocusable scroll regions found by axe. Left: only smoke + nav, no flow tests yet; `empty-table-header` (minor) on two heatmap corner cells.)
   - *Acceptance:* runs against `python -m seed` data; one smoke test each for Dashboard, Portfolio/Dropzone, Retirement Plan, Research Lab, Chat, Settings; `@axe-core/playwright` has zero serious violations; desktop + mobile (bottom nav) projects; traces/screenshots on failure; `make e2e`.
   - *Touch:* `frontend/e2e/`, `frontend/playwright.config.ts`, `Makefile`
   - *Depends:* E2, E4
@@ -207,30 +207,34 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
 
 ## Track U — UX and product
 
-- [ ] **U1 shadcn/ui adoption** — spec says shadcn, code has a hand-rolled `ui.tsx`.
+- [x] **U1 shadcn/ui adoption** — spec says shadcn, code has a hand-rolled `ui.tsx`. (Done: shadcn setup (`components.json`, `lib/utils.ts` `cn`, `class-variance-authority`, `tailwind-merge`, Radix Slot/Popover, `tw-animate-css`); primitives in `components/ui/` (Button, Card, Input, Badge, Popover) and `components/ui.tsx` re-implemented on them with unchanged signatures so pages are untouched; `Hint` is now a Radix popover (click/tap/keyboard, Esc, focus handling) instead of CSS hover; shadcn tokens in `index.css`; light + dark themes (slate scale and tinted accents remapped under `[data-theme=light]`, no-flash script in `index.html`, nav toggle persisted in localStorage, defaults to the OS preference); axe e2e now runs every page in both themes on desktop + mobile; unit tests for primitives and theme. Left: full page-level migration is U7; chart colors are still hard-coded hex (U3).)
   - *Acceptance:* migrate components incrementally; light/dark; keyboard navigation; axe clean (E5).
   - *Touch:* `frontend/src/components/`
   - *Depends:* E4
-- [ ] **U2 Onboarding wizard** — household → accounts → upload → goals → first plan.
+- [x] **U2 Onboarding wizard** — household → accounts → upload → goals → first plan. (Done: `/onboarding` route with resumable steps persisted on `UserProfile.onboarding` (migration `d5e6f7a8b9c0`), skip/dismiss/finish, `GET/PUT /api/onboarding` + `get_onboarding_status` chat tool; server-computed data-completeness score (weighted inputs, each with what it improves and where to enter it) shown in the wizard and as a Dashboard card until setup is complete; brand-new installs redirect from `/` to the wizard; pytest, vitest and Playwright (axe, both themes) cover it. Left: the upload step links to the Portfolio dropzone instead of embedding it.)
   - *Acceptance:* resumable steps; data-completeness meter explaining which inputs improve accuracy; component + e2e tests.
   - *Touch:* `frontend/src/pages/`, `backend/routes/`
   - *Depends:* E5
-- [ ] **U3 Charts** — fan chart, tax/withdrawal stack, bracket and ACA-cliff visualizer, cash-flow Sankey, scenario compare.
+- [x] **U3 Charts** — fan chart, tax/withdrawal stack, bracket and ACA-cliff visualizer, cash-flow Sankey, scenario compare. (Done: `components/charts/` with a shared `ChartFrame` (loading, error, empty and NaN states, legend for 2+ series, "View as table" fallback) and FanChart, WithdrawalStack/StackedYears, BracketAcaVisualizer, CashFlowSankey, ScenarioCompare on `--viz-*` theme tokens (dataviz palette slots 1-4, validated in both modes); wired into the Plan savings card, Withdrawals and Roth cards (inline bars replaced), Scenario card and the Dashboard. All numbers come from Python: the Monte Carlo path now carries p10/p25/p75/p90 per year, new `GET /api/charts/brackets` and `/api/charts/cashflow` (+ `get_chart_data` chat tool). Left: older cards (net worth, stress, symbol detail) still use hard-coded hex.)
   - *Acceptance:* follows the `dataviz` skill; renders empty/NaN/loading states; light/dark; tested.
   - *Touch:* `frontend/src/components/charts/`
   - *Depends:* E4, P2
-- [ ] **U4 Action center** — prioritized to-do feed.
+- [x] **U4 Action center** — prioritized to-do feed. (Done: `services/actions.py` generators for employer-match capture (new `employer_match_rate`/`employer_match_cap_pct` profile fields, Settings inputs), best-plan Roth conversion, rebalance drift, tax-loss harvest, stale statements and a year-end checklist from versioned `data/action_rules.json`; Python priority score 0-100; `ActionItem` table (migration `a1c4e7f20b95`) holds snooze/done and notification dedupe, keys carry a period suffix so items can recur; `GET /api/actions`, `POST /api/actions/<key>/snooze|done|reopen`; daily `action_alerts` job sends new items at priority 70+ once through `notifier.notify` and retries if no channel is configured; `get_action_items` chat tool; Dashboard feed card and `/actions` page. Left: no nav tab for `/actions` (reached from the Dashboard card).)
   - *Acceptance:* items for match capture, conversion amount, rebalance, harvest, stale statement, year-end checklist; snooze/done; Discord/SMTP notification hooks.
   - *Touch:* `backend/services/actions.py`, `backend/services/notifier.py`, frontend
   - *Depends:* P3, I3, I4
-- [ ] **U5 AI analyst improvements** — grounded, non-arithmetic assistant.
+- [x] **U5 AI analyst improvements** — grounded, non-arithmetic assistant. (Done: prompts live in versioned `services/prompts.py` (`PROMPT_VERSION`, pinned by a hash test) and now require field-path citations like `[get_profile.annual_income]` and forbid arithmetic; the server, not the model, checks citations against the tool results, replaces an ungrounded answer to a calculation question with a refusal, and builds the disclaimer + assumptions footer shown under each reply; `ChatMessage` records `prompt_version` and `citations`; `ChatSession` gains `scenario` and `memory` (migration `b2d5f8a31c06`, editable in the Chat page) injected into that chat's prompt only; Ollama routing (`api_base`, no key) covered by a test; tests use a mocked LLM, including adversarial arithmetic prompts. Tool coverage of every engine was already complete and is now asserted. Left: citations are shown as verified/unverified in the footer only, not as links.)
   - *Acceptance:* chat tools cover new engines; answers cite JSON fields used; refuses to compute (test with adversarial prompts and a mocked LLM); "not financial advice" and assumptions disclosure; per-scenario memory; Ollama via LiteLLM; prompt versioning tests.
   - *Touch:* `backend/services/chat_tools.py`, `backend/services/llm_router.py`
   - *Depends:* E7
-- [ ] **U6 PWA, privacy, multi-user** — polish and isolation.
+- [x] **U6 PWA, privacy, multi-user** — polish and isolation. (Done: `sw.js` is an offline app shell with a per-build versioned precache (a Vite plugin stamps the build id and hashed asset list), network-first navigation falling back to `offline.html`, never caches `/api/`; manifest gains id/scope/shortcuts and a maskable icon; nav tap targets are 44px; privacy mode toggle in the nav masks every `usd()` amount and persists in localStorage; `src/i18n/` `t()` + `en.json` with a test that every `t('…')` key exists; tenant scoping: ORM listener limits user-owned tables (and their account children) to the acting user chosen by the `X-AlphaBridge-User` header, `POST /api/users` creates a household member, `tests/test_user_scoping.py` covers every `user_id` model and route and a classification guard fails when a new table is not classified; found and fixed a leak in the plan-menu routes. Left: passkey/OIDC login skipped by decision, so the shared bearer token is still the only credential; household-level tables (`SHARED_TABLES`) are not per-user; scheduler and MCP act as user 1; no user-switcher UI; only nav/login/shared strings use `t()`.)
   - *Acceptance:* offline shell, mobile polish, privacy mode (mask balances), i18n-ready strings; per-user data-scoping tests; optional passkey/OIDC login in place of the shared token.
   - *Touch:* `frontend/public/sw.js`, `backend/app.py`, `backend/models.py`
   - *Depends:* E9
+- [ ] **U7 Full shadcn page migration** — follow-up to U1, which only moved the shared primitives.
+  - *Acceptance:* page-level markup uses shadcn components: native `<select>` → Select, ad-hoc tables → Table, hand-rolled forms/dialogs → Form/Dialog/Tabs/Switch/Tooltip; no raw `border-slate-*`/`bg-slate-*` pairs left for surfaces (use tokens); axe clean in both themes; existing vitest and e2e pass unchanged.
+  - *Touch:* `frontend/src/pages/`, `frontend/src/components/`
+  - *Depends:* U1
 
 ---
 

@@ -6,7 +6,7 @@ BE    := cd backend && . .venv/bin/activate &&
 FE    := cd frontend &&
 
 .DEFAULT_GOAL := help
-.PHONY: help setup dev test test-be test-fe cov lint fmt typecheck audit deadcode check ci hooks clean
+.PHONY: help setup dev test test-be test-fe cov lint fmt typecheck audit deadcode e2e check ci hooks clean
 
 help: ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-10s %s\n", $$1, $$2}'
@@ -51,6 +51,9 @@ audit: ## security scans (bandit, pip-audit, npm audit; hadolint/gitleaks/trivy 
 deadcode: ## vulture + knip (advisory)
 	-$(BE) vulture . --min-confidence 80 --exclude .venv,tests,alembic
 	-$(FE) npm run deadcode --silent
+
+e2e: ## Playwright smoke + axe on seeded data (desktop + mobile)
+	$(FE) npx playwright test
 
 check: lint typecheck cov audit ## what CI runs
 	$(FE) npm run build --silent

@@ -21,7 +21,7 @@ export default function RmdCard() {
           {b.irmaa_jump && <Badge tone="red">IRMAA tier up</Badge>}
         </p>
       )}
-      <div className="max-h-64 overflow-auto">
+      <div tabIndex={0} role="region" aria-label="RMD schedule" className="max-h-64 overflow-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-slate-400">
             <tr>

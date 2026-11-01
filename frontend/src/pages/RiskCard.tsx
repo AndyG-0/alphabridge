@@ -2,7 +2,7 @@ import { api } from '../api/client'
 import { Card, Err, pct, usd } from '../components/ui'
 import { useAsync } from '../hooks'
 
-const tint = (c: number) => (c >= 0 ? `rgba(56,189,248,${Math.min(c, 1) * 0.6})` : `rgba(248,113,113,${Math.min(-c, 1) * 0.6})`)
+const tint = (c: number) => (c >= 0 ? `rgba(56,189,248,${Math.min(c, 1) * 0.5})` : `rgba(248,113,113,${Math.min(-c, 1) * 0.5})`)
 
 export default function RiskCard() {
   const rk = useAsync(api.risk, [])
@@ -67,7 +67,7 @@ export default function RiskCard() {
           )}
 
           {names.length >= 2 && d.correlation && (
-            <div className="overflow-x-auto">
+            <div tabIndex={0} role="region" aria-label="Scrollable table" className="overflow-x-auto">
               <h3 className="font-medium text-slate-300">Correlation</h3>
               <table className="text-xs">
                 <thead>

@@ -13,7 +13,7 @@ export default function StrategiesCard() {
         Highest starting spend (today&apos;s dollars, before tax) from {usd(d.portfolio)} at {d.retire_age} for {d.years} years. Your plan spends{' '}
         {usd(d.current_plan_spend_after_tax)} after tax.
       </p>
-      <div className="overflow-x-auto">
+      <div tabIndex={0} role="region" aria-label="Scrollable table" className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="text-left text-slate-400">
             <tr>

@@ -6,22 +6,10 @@ from sqlalchemy import func
 import db
 from models import ChatMessage, ChatSession, utcnow
 from schemas import ChatMessageIn, ChatSessionPatch
-from services import chat_tools, llm_router
+from services import chat_tools, llm_router, prompts
 from services.llm_router import LLMNotConfigured, chat_with_tools
 
 bp = Blueprint("chat", __name__, url_prefix="/api")
-
-SYSTEM = (
-    "You are AlphaBridge's planning assistant for one household whose goals are to maximize long-run growth and retire early. "
-    "Never guess at the user's data: call the provided tools (profile, accounts, holdings, allocation, FIRE simulation and what-ifs, "
-    "planned events, pensions, debts and payoff schedule, household timeline, early-access/Rule of 55/SEPP, state Medicaid and HSA "
-    "rules, plan menus, imports, screener, sectors, cash signal, market, stocks). Before saying data is missing, call get_data_gaps. "
-    "Quote tool numbers; never do your own arithmetic beyond trivial comparisons, and use run_fire_scenario to test any what-if. "
-    "If a tool shows an input is missing or zero (income, expenses, spouse age, plan menu) say so and tell the user "
-    "where to enter it. Be concise and concrete, show trade-offs, and mention taxes and penalties where relevant (59.5 rule, "
-    "Rule of 55, SEPP, capital gains). You are read-only: you cannot change data or place trades. You are not a licensed advisor."
-)
-
 
 HISTORY_LIMIT = 30
 TITLE_SYSTEM = "Write a 3-6 word title for this conversation about household finance. Reply with the title only: no quotes, no trailing period."
@@ -76,7 +64,12 @@ def session_rename(sid):
     c = _get(sid)
     if c is None:
         return jsonify(error="not found"), 404
-    c.title, c.title_source = data.title.strip(), "user"
+    if data.title is not None:
+        c.title, c.title_source = data.title.strip(), "user"
+    if data.scenario is not None:
+        c.scenario = data.scenario.strip()
+    if data.memory is not None:
+        c.memory = data.memory.strip()
     db.session().commit()
     return jsonify(c.to_dict())
 
@@ -100,16 +93,31 @@ def session_send(sid):
         return jsonify(error="not found"), 404
     history = [{"role": m.role, "content": m.content} for m in c.messages][-HISTORY_LIMIT:]
     history.append({"role": "user", "content": body.content})
+    results: dict[str, str] = {}  # latest JSON result per tool, for citation checks and the arithmetic guard
+
+    def dispatch(name: str, args: dict) -> str:
+        out = chat_tools.dispatch(name, args)
+        results[name] = out
+        return out
+
     try:
-        reply, used = chat_with_tools("reasoning", SYSTEM, history, chat_tools.SCHEMAS, chat_tools.dispatch, max_steps=8)
+        reply, used = chat_with_tools("reasoning", prompts.build_system(c.scenario, c.memory), history, chat_tools.SCHEMAS, dispatch, max_steps=8)
     except LLMNotConfigured as e:
         return jsonify(error=str(e)), 400
     except Exception as e:
         return jsonify(error=f"LLM call failed: {e}"), 502
+    reply = prompts.guard_arithmetic(body.content, reply, results) or reply
     s = db.session()
     first = not c.messages
     user_msg = ChatMessage(session_id=c.id, role="user", content=body.content)
-    bot_msg = ChatMessage(session_id=c.id, role="assistant", content=reply, tools_used=sorted(set(used)))
+    bot_msg = ChatMessage(
+        session_id=c.id,
+        role="assistant",
+        content=reply,
+        tools_used=sorted(set(used)),
+        prompt_version=prompts.PROMPT_VERSION,
+        citations=prompts.check_citations(reply, results),
+    )
     s.add_all([user_msg, bot_msg])
     c.updated_at = utcnow()
     if first and c.title_source == "auto":

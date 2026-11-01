@@ -1,12 +1,14 @@
 import db
 from models import UserProfile
+from userctx import current_user_id
 
 
 def get_profile() -> UserProfile:
     s = db.session()
-    p = s.get(UserProfile, 1)
+    uid = current_user_id()
+    p = s.get(UserProfile, uid)
     if p is None:
-        p = UserProfile(id=1)
+        p = UserProfile(id=uid)
         s.add(p)
         s.commit()
     return p

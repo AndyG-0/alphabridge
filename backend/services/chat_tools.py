@@ -23,13 +23,16 @@ from models import (
 )
 from routes._helpers import get_profile
 from services import (
+    actions,
     cash_backtest,
     cash_plan,
+    chart_data,
     early_access,
     household,
     hsa,
     market_data,
     networth,
+    onboarding,
     performance,
     planner,
     rebalance,
@@ -322,6 +325,24 @@ TOOLS = [
         "get_spending_actuals",
         "Measured monthly spending from imported transactions vs the plan assumption: average, by category, lifestyle-creep flag, uncategorized count.",
         _obj({"months": {"type": "integer"}}),
+    ),
+    (
+        "get_action_items",
+        "The prioritized to-do feed (employer match, Roth conversion, rebalance, tax-loss harvest, stale statements, year-end checklist), "
+        "each with a 0-100 priority, dollar impact and where to act. Set include_hidden to also see snoozed and done items.",
+        _obj({"include_hidden": {"type": "boolean"}}),
+    ),
+    (
+        "get_chart_data",
+        "Numbers behind the charts: kind='brackets' (ordinary tax brackets filled by a MAGI, with marginal rate; optional magi, year) or "
+        "kind='cashflow' (this year's income split into taxes, spending, debt payments, savings and leftover).",
+        _obj({"kind": {"type": "string", "enum": ["brackets", "cashflow"]}, "magi": {"type": "number"}, "year": {"type": "integer"}}, ["kind"]),
+    ),
+    (
+        "get_onboarding_status",
+        "Setup progress: which wizard steps are done (household, accounts, upload, goals, first plan) and a 0-100 data-completeness score with, "
+        "for each missing input, what it would make more accurate. Use to explain why a result may be imprecise.",
+        _obj({}),
     ),
     ("get_ingestion_log", "Recent file imports: filename, parser, rows, status (OK/ERROR/UNDONE), message.", _obj({"limit": {"type": "integer"}})),
     (
@@ -891,6 +912,17 @@ HANDLERS = {
     "get_ingestion_log": _ingest_log,
     "get_spending_actuals": lambda a: transactions.actuals(get_profile(), months=int(a.get("months") or 12)),
     "get_data_gaps": lambda a: _gaps(),
+    "get_action_items": lambda a: actions.feed(db.session(), get_profile(), include_hidden=bool(a.get("include_hidden"))),
+    "get_chart_data": lambda a: (
+        chart_data.cash_flow(db.session(), get_profile())
+        if a.get("kind") == "cashflow"
+        else chart_data.bracket_fill(
+            float(a["magi"]) if a.get("magi") is not None else float(get_profile().annual_income or 0) + float(get_profile().spouse_annual_income or 0),
+            get_profile().tax_filing_status,
+            int(a["year"]) if a.get("year") else None,
+        )
+    ),
+    "get_onboarding_status": lambda a: onboarding.status(db.session(), get_profile()),
     "get_screener_results": _screener,
     "get_sector_overview": lambda a: market_data.sector_strength(),
     "get_notification_status": lambda a: _notifications(),

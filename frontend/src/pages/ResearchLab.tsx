@@ -157,7 +157,7 @@ export default function ResearchLab() {
         >
           {busy === 'sc' ? 'Screening (can take a few minutes)…' : 'Run screener now'}
         </Button>
-        <div className="mt-3 overflow-x-auto md:overflow-visible">
+        <div tabIndex={0} role="region" aria-label="Scrollable table" className="mt-3 overflow-x-auto md:overflow-visible">
           <table className="w-full text-sm">
             <thead className="text-left text-xs text-slate-500">
               <tr>

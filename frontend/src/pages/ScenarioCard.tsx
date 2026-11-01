@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api/client'
+import ScenarioCompareChart from '../components/charts/ScenarioCompare'
 import { Card, Err, usd } from '../components/ui'
 import { useAsync } from '../hooks'
 
@@ -41,6 +42,7 @@ export default function ScenarioCard() {
         Compare and rank sensitivities
       </button>
       <Err error={cmp.error} />
+      {cmp.data && <ScenarioCompareChart data={cmp.data} />}
       {cmp.data && (
         <table className="mt-2 w-full text-sm">
           <thead className="text-left text-slate-400">
@@ -79,7 +81,7 @@ export default function ScenarioCard() {
         </ul>
       )}
       <div className="mt-3 flex items-center gap-3 text-sm">
-        <select className="border-b bg-transparent" value={kind} onChange={(e) => setKind(e.target.value)}>
+        <select aria-label="Scenario type" className="border-b bg-transparent" value={kind} onChange={(e) => setKind(e.target.value)}>
           <option value="max_spend">Max monthly spend</option>
           <option value="required_savings">Required monthly savings</option>
           <option value="earliest_age">Earliest retirement age</option>

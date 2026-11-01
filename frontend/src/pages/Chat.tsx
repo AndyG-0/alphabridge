@@ -2,7 +2,7 @@ import { Check, MessageSquarePlus, Pencil, Send, Trash2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api, type ChatMsg } from '../api/client'
-import { Button, Card, Err } from '../components/ui'
+import { Button, Card, Err, Input } from '../components/ui'
 import { useAsync } from '../hooks'
 
 const SUGGESTIONS = [
@@ -24,6 +24,9 @@ export default function Chat() {
   const [err, setErr] = useState<unknown>(null)
   const [editing, setEditing] = useState<number | null>(null)
   const [draft, setDraft] = useState('')
+  const [scenario, setScenario] = useState('')
+  const [memory, setMemory] = useState('')
+  const [saved, setSaved] = useState(false)
   const loaded = useRef<number | null>(null) // the session whose messages are in state; avoids reloading one we just created
   const end = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -34,13 +37,20 @@ export default function Chat() {
     if (id === loaded.current) return
     loaded.current = id
     setErr(null)
+    setSaved(false)
     if (id === null) {
       setMsgs([])
+      setScenario('')
+      setMemory('')
       return
     }
     api
       .chatSession(id)
-      .then((s) => setMsgs(s.messages))
+      .then((s) => {
+        setMsgs(s.messages)
+        setScenario(s.scenario ?? '')
+        setMemory(s.memory ?? '')
+      })
       .catch((e) => {
         setErr(e)
         setMsgs([])
@@ -80,6 +90,17 @@ export default function Chat() {
     try {
       await api.renameChatSession(sid, title)
       sessions.reload()
+    } catch (e) {
+      setErr(e)
+    }
+  }
+
+  const saveNotes = async () => {
+    if (id === null) return
+    try {
+      await api.updateChatSession(id, { scenario, memory })
+      setSaved(true)
+      setErr(null)
     } catch (e) {
       setErr(e)
     }
@@ -153,6 +174,41 @@ export default function Chat() {
           The assistant calls read-only tools over your profile, accounts, plan, pensions, debts, early-access rules, health-care rules, market data and
           research. Data it reads is sent to your configured LLM provider with each question. Conversations are saved here so you can resume them.
         </p>
+        {id !== null && (
+          <details className="mb-3 rounded-xl border border-slate-800 px-3 py-2 text-sm" open={Boolean(scenario || memory)}>
+            <summary className="cursor-pointer text-slate-300">Scenario and notes for this chat</summary>
+            <div className="mt-2 space-y-2">
+              <Input
+                label="Scenario name"
+                value={scenario}
+                maxLength={80}
+                onChange={(e) => {
+                  setScenario(e.target.value)
+                  setSaved(false)
+                }}
+              />
+              <label className="block text-xs text-slate-400">
+                Notes the assistant should remember in this chat
+                <textarea
+                  value={memory}
+                  maxLength={4000}
+                  rows={3}
+                  onChange={(e) => {
+                    setMemory(e.target.value)
+                    setSaved(false)
+                  }}
+                  className="mt-1 block w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+                />
+              </label>
+              <div className="flex items-center gap-3">
+                <Button type="button" variant="ghost" onClick={saveNotes}>
+                  Save notes
+                </Button>
+                {saved && <span className="text-xs text-emerald-400">Saved</span>}
+              </div>
+            </div>
+          </details>
+        )}
         <div className="max-h-[55vh] min-h-48 space-y-3 overflow-y-auto">
           {msgs.length === 0 && (
             <div className="flex flex-wrap gap-2">
@@ -178,6 +234,7 @@ export default function Chat() {
             >
               {m.content}
               {m.tools.length > 0 && <div className="mt-1 text-[11px] text-slate-500">Checked: {m.tools.join(', ')}</div>}
+              {m.footer && <div className="mt-1 text-[11px] text-slate-500">{m.footer}</div>}
             </div>
           ))}
           {busy && <div className="mr-8 rounded-2xl bg-slate-900 px-3 py-2 text-sm text-slate-400">Thinking…</div>}
@@ -197,7 +254,7 @@ export default function Chat() {
             placeholder="Ask about your plan…"
             className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
           />
-          <Button type="submit" disabled={busy || !input.trim()}>
+          <Button type="submit" aria-label="Send message" disabled={busy || !input.trim()}>
             <Send size={16} />
           </Button>
         </form>

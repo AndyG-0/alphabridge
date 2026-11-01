@@ -49,6 +49,20 @@ def create_app(overrides: dict | None = None) -> Flask:
             return jsonify(error="unauthorized"), 401
         return None
 
+    @app.before_request
+    def _user():
+        raw = request.headers.get("X-AlphaBridge-User", "").strip()
+        if not raw:
+            return None
+        from flask import g
+
+        from models import UserProfile
+
+        if not raw.isdigit() or db.session().get(UserProfile, int(raw)) is None:
+            return jsonify(error="unknown user"), 400
+        g.user_id = int(raw)
+        return None
+
     @app.teardown_appcontext
     def _cleanup(_exc):
         db.remove_session()
@@ -85,6 +99,10 @@ def create_app(overrides: dict | None = None) -> Flask:
         "rmd_routes",
         "spending_routes",
         "export_routes",
+        "onboarding_routes",
+        "chart_routes",
+        "action_routes",
+        "user_routes",
     ):
         app.register_blueprint(importlib.import_module(f"routes.{mod}").bp)
 

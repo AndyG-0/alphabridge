@@ -2,6 +2,9 @@ import { Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAx
 import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api, type Owner } from '../api/client'
+import ActionFeed from '../components/ActionFeed'
+import CashFlowSankey from '../components/charts/CashFlowSankey'
+import CompletenessMeter from '../components/CompletenessMeter'
 import { Badge, Bar, Card, Err, Hint, pct, usd } from '../components/ui'
 import { useAsync } from '../hooks'
 import CashPlanCard from './CashPlanCard'
@@ -17,6 +20,8 @@ export default function Dashboard() {
   const fire = useAsync(api.fire)
   const debt = useAsync(api.debt)
   const prof = useAsync(api.profile)
+  const ob = useAsync(api.onboarding)
+  const flow = useAsync(api.chartCashflow)
   const spouse = prof.data?.spouse_age ? prof.data.spouse_name || 'Spouse' : undefined
   const ownerLabel: Record<Owner, string> = { SELF: 'Yours', SPOUSE: spouse ? `${spouse}'s` : "Spouse's", JOINT: 'Joint' }
   const byOwner = pf.data?.by_owner
@@ -26,6 +31,17 @@ export default function Dashboard() {
   const pie = b ? (Object.keys(COLORS) as (keyof typeof COLORS)[]).map((k) => ({ name: LABELS[k], value: b[k], color: COLORS[k] })) : []
   return (
     <div className="grid gap-4 md:grid-cols-2">
+      {ob.data?.show && !ob.data.completed && (
+        <Card title="Finish setting up" className="md:col-span-2">
+          <CompletenessMeter c={ob.data.completeness} />
+          <Link to="/onboarding" className="mt-3 inline-flex items-center gap-1 text-sm text-emerald-400">
+            Continue setup <ArrowRight size={14} aria-hidden />
+          </Link>
+        </Card>
+      )}
+      <Card title="Next actions" className="md:col-span-2">
+        <ActionFeed limit={5} />
+      </Card>
       <Card title="Net worth & barbell split" className="md:col-span-2">
         <Err error={pf.error} />
         <div className="flex flex-wrap items-center gap-6">
@@ -76,6 +92,13 @@ export default function Dashboard() {
           </div>
         )}
         {pf.data && pf.data.accounts.length === 0 && <p className="mt-3 text-sm text-slate-400">No accounts yet — upload a statement in the Portfolio tab.</p>}
+      </Card>
+      <Card title="Where your income goes" className="md:col-span-2">
+        <CashFlowSankey data={flow.data} loading={flow.loading && !flow.data} error={flow.error} />
+        {flow.data && flow.data.shortfall > 0 && (
+          <p className="mt-2 text-xs text-amber-300">Spending, debt and savings exceed income by {usd(flow.data.shortfall)} a year.</p>
+        )}
+        {flow.data && <p className="mt-1 text-xs text-slate-500">{flow.data.note}</p>}
       </Card>
 
       <NetWorthCard />

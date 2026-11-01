@@ -6,11 +6,20 @@ from pydantic import BaseModel, Field, field_validator
 from services import spending, state_rules
 
 
+class OnboardingIn(BaseModel):
+    step: Literal["household", "accounts", "upload", "goals", "plan"] | None = None  # resume point
+    skip: Literal["household", "accounts", "upload", "goals", "plan"] | None = None  # mark a step skipped
+    completed: bool | None = None
+    dismissed: bool | None = None
+
+
 class ProfileIn(BaseModel):
     name: str | None = None
     birth_date: date | None = None
     target_retirement_age: float | None = Field(None, ge=0, le=100)
     annual_income: float | None = Field(None, ge=0)
+    employer_match_rate: float | None = Field(None, ge=0, le=5)
+    employer_match_cap_pct: float | None = Field(None, ge=0, le=1)
     monthly_expenses_current: float | None = Field(None, ge=0)
     monthly_expenses_retirement: float | None = Field(None, ge=0)
     emergency_fund_target_months: float | None = Field(None, ge=0, le=60)
@@ -186,7 +195,9 @@ class ChatMessageIn(BaseModel):
 
 
 class ChatSessionPatch(BaseModel):
-    title: str = Field(min_length=1, max_length=160)
+    title: str | None = Field(default=None, min_length=1, max_length=160)
+    scenario: str | None = Field(default=None, max_length=80)
+    memory: str | None = Field(default=None, max_length=4000)
 
 
 SCENARIO_FIELDS = {

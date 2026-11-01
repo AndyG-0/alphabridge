@@ -554,6 +554,8 @@ def menu_dict(m: AllowedPlanMenu) -> dict:
 
 @bp.get("/accounts/<int:aid>/menu")
 def menu_list(aid):
+    if db.session().get(Account, aid) is None:
+        return jsonify(error="not found"), 404
     rows = db.session().query(AllowedPlanMenu).filter_by(account_id=aid).all()
     return jsonify([menu_dict(m) for m in rows])
 
@@ -562,6 +564,8 @@ def menu_list(aid):
 def menu_replace(aid):
     items = [PlanMenuItemIn.model_validate(i) for i in request.get_json(force=True)]
     s = db.session()
+    if s.get(Account, aid) is None:
+        return jsonify(error="not found"), 404
     s.query(AllowedPlanMenu).filter_by(account_id=aid).delete()
     for i in items:
         s.add(AllowedPlanMenu(account_id=aid, **i.model_dump()))

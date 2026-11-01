@@ -111,7 +111,7 @@ export default function PerformanceCard() {
           Amount (− for withdrawal)
           <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" className="mt-1 block w-32 rounded bg-slate-800 px-2 py-1" />
         </label>
-        <button onClick={add} disabled={!on || !Number(amount)} className="rounded bg-sky-600 px-3 py-1 disabled:opacity-40">
+        <button onClick={add} disabled={!on || !Number(amount)} className="rounded bg-sky-600 text-white px-3 py-1 disabled:opacity-40">
           Record cash flow
         </button>
         {d.flow_mode === 'none' && (

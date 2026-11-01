@@ -1,0 +1,58 @@
+{
+  "retrieved_on": "2026-10-31",
+  "source_url": "https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-contributions",
+  "notes": "Thresholds are product choices (when an action is worth surfacing), not tax law. The year-end checklist deadlines are statutory: Dec 31 for 401(k) deferrals, Roth conversions, RMDs and loss harvesting; the April tax-filing deadline for prior-year IRA/HSA contributions.",
+  "notify_priority": 70,
+  "stale_statement_days": 35,
+  "harvest_min_savings": 100,
+  "roth_lead_years": 1,
+  "rebalance_min_drift": 0.0,
+  "base_priority": {
+    "match": 80,
+    "roth": 55,
+    "rebalance": 50,
+    "harvest": 55,
+    "stale": 45,
+    "year_end": 40
+  },
+  "year_end": {
+    "start_month": 10,
+    "items": [
+      {
+        "id": "max_401k",
+        "applies": "always",
+        "title": "Check your 401(k) deferrals against this year's limit",
+        "detail": "Payroll deferrals must post by Dec 31. Compare year-to-date deferrals with the limit in Plan > Savings and adjust your per-paycheck percentage now.",
+        "source_url": "https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-401k-and-profit-sharing-plan-contribution-limits"
+      },
+      {
+        "id": "harvest",
+        "applies": "taxable",
+        "title": "Review tax-loss harvesting before Dec 31",
+        "detail": "Losses only count for this tax year if the sale settles by Dec 31; watch the 30-day wash-sale window across all your accounts.",
+        "source_url": "https://www.irs.gov/taxtopics/tc409"
+      },
+      {
+        "id": "roth_window",
+        "applies": "always",
+        "title": "Roth conversions must be completed by Dec 31",
+        "detail": "A conversion counts for the year it is done, and recharacterization is no longer allowed. Fill the low brackets shown in the Roth planner before year end.",
+        "source_url": "https://www.irs.gov/retirement-plans/roth-iras"
+      },
+      {
+        "id": "rmd",
+        "applies": "rmd_age",
+        "title": "Take your required minimum distribution by Dec 31",
+        "detail": "Missing an RMD triggers an excise tax. A qualified charitable distribution can satisfy part of it tax-free.",
+        "source_url": "https://www.irs.gov/retirement-plans/retirement-plan-and-ira-required-minimum-distributions-faqs"
+      },
+      {
+        "id": "hsa_fsa",
+        "applies": "always",
+        "title": "Use or fund health accounts",
+        "detail": "FSA balances may expire at year end; HSA contributions for this year can be made until the filing deadline.",
+        "source_url": "https://www.irs.gov/publications/p969"
+      }
+    ]
+  }
+}

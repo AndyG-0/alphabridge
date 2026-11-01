@@ -16,6 +16,12 @@ export default tseslint.config(
     // set-state-in-effect is pre-existing across pages; fix gradually, then flip to error.
     rules: { ...reactHooks.configs.recommended.rules, 'react-hooks/set-state-in-effect': 'warn' },
   },
-  { rules: { 'jsx-a11y/label-has-associated-control': ['error', { depth: 3 }] } },
+  {
+    rules: {
+      'jsx-a11y/label-has-associated-control': ['error', { depth: 3 }],
+      // scrollable regions must be keyboard-focusable (axe: scrollable-region-focusable)
+      'jsx-a11y/no-noninteractive-tabindex': ['error', { roles: ['region'], tags: [] }],
+    },
+  },
   { files: ['*.config.{js,ts}'], languageOptions: { globals: { ...globals.node } } },
 )

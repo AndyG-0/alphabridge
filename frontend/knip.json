@@ -3,6 +3,6 @@
   "entry": ["src/main.tsx", "src/**/*.test.tsx"],
   "project": ["src/**/*.{ts,tsx}"],
   "ignore": ["public/**"],
-  "ignoreDependencies": ["@tailwindcss/vite", "tailwindcss"],
+  "ignoreDependencies": ["@tailwindcss/vite", "tailwindcss", "tw-animate-css"],
   "rules": { "types": "off" }
 }

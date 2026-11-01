@@ -116,7 +116,7 @@ export default function TaxLotsCard() {
           Raise ($)
           <input value={amt} onChange={(e) => setAmt(e.target.value)} inputMode="decimal" className="mt-1 block w-28 rounded bg-slate-800 px-2 py-1" />
         </label>
-        <button onClick={plan} disabled={!sym.trim() || !Number(amt)} className="rounded bg-sky-600 px-3 py-1 disabled:opacity-40">
+        <button onClick={plan} disabled={!sym.trim() || !Number(amt)} className="rounded bg-sky-600 text-white px-3 py-1 disabled:opacity-40">
           Which lots to sell?
         </button>
       </div>
