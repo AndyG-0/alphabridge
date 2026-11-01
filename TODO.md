@@ -223,7 +223,7 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
   - *Acceptance:* items for match capture, conversion amount, rebalance, harvest, stale statement, year-end checklist; snooze/done; Discord/SMTP notification hooks.
   - *Touch:* `backend/services/actions.py`, `backend/services/notifier.py`, frontend
   - *Depends:* P3, I3, I4
-- [ ] **U5 AI analyst improvements** — grounded, non-arithmetic assistant.
+- [x] **U5 AI analyst improvements** — grounded, non-arithmetic assistant. (Done: prompts live in versioned `services/prompts.py` (`PROMPT_VERSION`, pinned by a hash test) and now require field-path citations like `[get_profile.annual_income]` and forbid arithmetic; the server, not the model, checks citations against the tool results, replaces an ungrounded answer to a calculation question with a refusal, and builds the disclaimer + assumptions footer shown under each reply; `ChatMessage` records `prompt_version` and `citations`; `ChatSession` gains `scenario` and `memory` (migration `b2d5f8a31c06`, editable in the Chat page) injected into that chat's prompt only; Ollama routing (`api_base`, no key) covered by a test; tests use a mocked LLM, including adversarial arithmetic prompts. Tool coverage of every engine was already complete and is now asserted. Left: citations are shown as verified/unverified in the footer only, not as links.)
   - *Acceptance:* chat tools cover new engines; answers cite JSON fields used; refuses to compute (test with adversarial prompts and a mocked LLM); "not financial advice" and assumptions disclosure; per-scenario memory; Ollama via LiteLLM; prompt versioning tests.
   - *Touch:* `backend/services/chat_tools.py`, `backend/services/llm_router.py`
   - *Depends:* E7

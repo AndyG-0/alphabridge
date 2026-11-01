@@ -55,12 +55,17 @@ export interface ChatSession {
   title_source: 'auto' | 'user'
   updated_at: string
   message_count?: number
+  scenario?: string
+  memory?: string
 }
 export interface ChatMsg {
   id: number
   role: 'user' | 'assistant'
   content: string
   tools: string[]
+  footer?: string
+  prompt_version?: string
+  citations?: { ref: string; ok: boolean }[]
 }
 export interface ChatSessionFull extends ChatSession {
   messages: ChatMsg[]
@@ -1077,6 +1082,7 @@ export const api = {
   createChatSession: () => req<ChatSessionFull>('/chat/sessions', json('POST')),
   chatSession: (id: number) => req<ChatSessionFull>(`/chat/sessions/${id}`),
   renameChatSession: (id: number, title: string) => req<ChatSession>(`/chat/sessions/${id}`, json('PATCH', { title })),
+  updateChatSession: (id: number, b: { scenario?: string; memory?: string }) => req<ChatSession>(`/chat/sessions/${id}`, json('PATCH', b)),
   deleteChatSession: (id: number) => req<null>(`/chat/sessions/${id}`, json('DELETE')),
   sendChat: (id: number, content: string) =>
     req<{ session: ChatSession; user: ChatMsg; assistant: ChatMsg }>(`/chat/sessions/${id}/messages`, json('POST', { content })),

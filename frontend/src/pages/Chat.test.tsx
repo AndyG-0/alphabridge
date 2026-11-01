@@ -81,4 +81,30 @@ describe('Chat sessions', () => {
     await user.click(screen.getByLabelText('Delete Cash plan'))
     await waitFor(() => expect(screen.queryByText('Cash plan')).not.toBeInTheDocument())
   })
+
+  it('shows the server footer and saves scenario notes', async () => {
+    const patches: unknown[] = []
+    server.use(
+      http.get('*/api/chat/sessions', () => HttpResponse.json([s1])),
+      http.get('*/api/chat/sessions/1', () =>
+        HttpResponse.json({
+          ...s1,
+          scenario: 'Retire at 52',
+          memory: 'Spouse works to 55',
+          messages: [{ id: 2, role: 'assistant', content: 'Yes.', tools: ['get_profile'], footer: 'General information only. Prompt v1.' }],
+        }),
+      ),
+      http.patch('*/api/chat/sessions/1', async ({ request }) => {
+        patches.push(await request.json())
+        return HttpResponse.json(s1)
+      }),
+    )
+    renderAt('/chat/1')
+    expect(await screen.findByText(/General information only/)).toBeInTheDocument()
+    expect(await screen.findByDisplayValue('Retire at 52')).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText(/Notes the assistant should remember/), '!')
+    await userEvent.click(screen.getByRole('button', { name: 'Save notes' }))
+    await waitFor(() => expect(patches).toEqual([{ scenario: 'Retire at 52', memory: 'Spouse works to 55!' }]))
+    expect(await screen.findByText('Saved')).toBeInTheDocument()
+  })
 })

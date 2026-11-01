@@ -317,6 +317,8 @@ class ChatSession(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=1)
     title: Mapped[str] = mapped_column(String(160), default="New chat")
     title_source: Mapped[str] = mapped_column(String(10), default="auto")  # auto | user (a user rename is never overwritten)
+    scenario: Mapped[str] = mapped_column(String(80), default="")  # optional label such as "Retire at 52"
+    memory: Mapped[str] = mapped_column(Text, default="")  # user-saved notes injected into this conversation's system prompt
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan", order_by="ChatMessage.id")
@@ -326,6 +328,8 @@ class ChatSession(Base):
             "id": self.id,
             "title": self.title,
             "title_source": self.title_source,
+            "scenario": self.scenario or "",
+            "memory": self.memory or "",
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }
@@ -338,11 +342,22 @@ class ChatMessage(Base):
     role: Mapped[str] = mapped_column(String(10))  # user | assistant
     content: Mapped[str] = mapped_column(Text)
     tools_used: Mapped[list] = mapped_column(JSON, default=list)
+    prompt_version: Mapped[str] = mapped_column(String(30), default="")  # services.prompts.PROMPT_VERSION that produced an assistant reply
+    citations: Mapped[list] = mapped_column(JSON, default=list)  # [{ref, ok}] field-path citations checked against tool output
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     session = relationship("ChatSession", back_populates="messages")
 
     def to_dict(self) -> dict:
-        return {"id": self.id, "role": self.role, "content": self.content, "tools": self.tools_used or [], "created_at": self.created_at.isoformat()}
+        from services import prompts
+
+        d = {"id": self.id, "role": self.role, "content": self.content, "tools": self.tools_used or [], "created_at": self.created_at.isoformat()}
+        if self.role == "assistant":
+            d |= {
+                "prompt_version": self.prompt_version or "",
+                "citations": self.citations or [],
+                "footer": prompts.footer(self.tools_used or [], self.citations or [], self.prompt_version or "unversioned"),
+            }
+        return d
 
 
 class ResearchReport(Base):

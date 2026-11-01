@@ -195,7 +195,9 @@ class ChatMessageIn(BaseModel):
 
 
 class ChatSessionPatch(BaseModel):
-    title: str = Field(min_length=1, max_length=160)
+    title: str | None = Field(default=None, min_length=1, max_length=160)
+    scenario: str | None = Field(default=None, max_length=80)
+    memory: str | None = Field(default=None, max_length=4000)
 
 
 SCENARIO_FIELDS = {
