@@ -5,15 +5,35 @@ XML parser. Positions come from INVPOSLIST (joined to SECLIST for ticker/name); 
 come from LEDGERBAL / INVBAL. Every row is checked with `validate_parse.check_rows`.
 """
 
+import bisect
 import re
 from datetime import datetime
 
 from services import validate_parse
 from services.ingestion import ParsedRow, ParseResult, bad_number, guess_asset_class, money
 
-_POS_BLOCK = re.compile(r"<(POS(?:STOCK|MF|DEBT|OPT|OTHER))>(.*?)</\1>", re.S | re.I)
-_SEC_BLOCK = re.compile(r"<(STOCKINFO|MFINFO|DEBTINFO|OPTINFO|OTHERINFO)>(.*?)</\1>", re.S | re.I)
-_STMT_BLOCK = re.compile(r"<(INVSTMTRS|STMTRS|CCSTMTRS)>(.*?)</\1>", re.S | re.I)
+_POS_TAGS = ("POSSTOCK", "POSMF", "POSDEBT", "POSOPT", "POSOTHER")
+_SEC_TAGS = ("STOCKINFO", "MFINFO", "DEBTINFO", "OPTINFO", "OTHERINFO")
+_STMT_TAGS = ("INVSTMTRS", "STMTRS", "CCSTMTRS")
+
+
+def _blocks(text: str, tags: tuple[str, ...]) -> list[tuple[str, str]]:
+    """(tag, body) for each <TAG>...</TAG> in document order. Linear time: one pass indexes the tags, then bodies are
+    sliced between each open tag and the next matching close (a regex with a lazy group is polynomial on hostile input)."""
+    alt = "|".join(tags)
+    opens = [(m.start(), m.end(), m.group(1).upper()) for m in re.finditer(rf"<({alt})>", text, re.I)]
+    closes: dict[str, list[int]] = {}
+    for m in re.finditer(rf"</({alt})>", text, re.I):
+        closes.setdefault(m.group(1).upper(), []).append(m.start())
+    out, cursor = [], 0
+    for start, end, tag in opens:
+        if start < cursor:
+            continue  # nested/overlapping open inside a block already taken
+        i = bisect.bisect_left(closes.get(tag, []), end)
+        if i < len(closes.get(tag, [])):
+            out.append((tag, text[end : closes[tag][i]]))
+            cursor = closes[tag][i]
+    return out
 
 
 def _tag(block: str, name: str) -> str:
@@ -33,7 +53,7 @@ def is_qif(text: str) -> bool:
 def _sec_map(text: str) -> dict[str, tuple[str, str]]:
     """UNIQUEID (cusip) -> (ticker, name)."""
     out: dict[str, tuple[str, str]] = {}
-    for _, body in _SEC_BLOCK.findall(text):
+    for _, body in _blocks(text, _SEC_TAGS):
         uid = _tag(body, "UNIQUEID")
         if uid:
             out[uid] = (_tag(body, "TICKER").upper(), _tag(body, "SECNAME"))
@@ -44,12 +64,12 @@ def parse_ofx(text: str) -> ParseResult:
     res = ParseResult(parser="ofx")
     secs = _sec_map(text)
     printed: dict[int, float] = {}
-    stmts = _STMT_BLOCK.findall(text) or [("", text)]
+    stmts = _blocks(text, _STMT_TAGS) or [("", text)]
     for kind, body in stmts:
         acct_id = _tag(body, "ACCTID")
         last4 = acct_id[-4:] if acct_id else "0000"
         label = f"{_tag(text, 'ORG') or 'OFX'} {last4}".strip()
-        for pos_kind, pos in _POS_BLOCK.findall(body):
+        for pos_kind, pos in _blocks(body, _POS_TAGS):
             uid = _tag(pos, "UNIQUEID")
             ticker, name = secs.get(uid, ("", ""))
             symbol = ticker or uid.upper()

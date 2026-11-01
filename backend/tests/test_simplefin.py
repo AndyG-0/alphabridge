@@ -80,3 +80,11 @@ def test_scheduler_noop_when_disconnected(app):
     scheduler.simplefin_sync(app)
     assert scheduler.RUNS["simplefin_sync"]["status"] == "ok"
     pytest.importorskip("responses")
+
+
+@pytest.mark.parametrize(
+    "host", ["http://bridge.example/c", "https://localhost/c", "https://127.0.0.1/c", "https://10.0.0.5/c", "https://intranet/c", "https://nas.local/c"]
+)
+def test_claim_rejects_internal_hosts(host):
+    with pytest.raises(ValueError):
+        simplefin._check_public_https(host)

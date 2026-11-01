@@ -71,3 +71,11 @@ def test_qif_route_imports(client):
         content_type="multipart/form-data",
     )
     assert r.status_code == 201
+
+
+def test_hostile_ofx_is_linear_time():
+    import time
+
+    t0 = time.time()
+    ofx.parse_ofx("<OFX>" + "<MFINFO>a" * 20000 + "<STMTRS>" * 20000 + "<POSMF>a" * 20000)
+    assert time.time() - t0 < 2

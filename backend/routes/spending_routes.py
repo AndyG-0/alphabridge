@@ -61,8 +61,8 @@ def set_category(tid: int):
     body = request.get_json(silent=True) or {}
     try:
         ok = transactions.set_category(tid, str(body.get("category", "")), bool(body.get("make_rule")))
-    except ValueError as e:
-        return jsonify(error=str(e)), 400
+    except ValueError:
+        return jsonify(error="unknown category"), 400
     return (jsonify(ok=True), 200) if ok else (jsonify(error="not found"), 404)
 
 
@@ -70,10 +70,10 @@ def set_category(tid: int):
 def suggest():
     try:
         return jsonify(suggested=transactions.suggest_with_llm())
-    except LLMNotConfigured as e:
-        return jsonify(error=str(e)), 409
-    except ValueError as e:
-        return jsonify(error=str(e)), 422
+    except LLMNotConfigured:
+        return jsonify(error="No LLM is configured: add a key in Settings"), 409
+    except ValueError:
+        return jsonify(error="Nothing to categorize, or the AI reply could not be read"), 422
 
 
 @bp.post("/spending/confirm")

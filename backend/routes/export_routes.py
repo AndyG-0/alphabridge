@@ -3,7 +3,7 @@
 `/api/share/<token>/...` is the only unauthenticated-by-bearer prefix (see app._auth); the signed token scopes it to the report.
 """
 
-from flask import Blueprint, Response, abort, jsonify, request
+from flask import Blueprint, Response, abort, current_app, jsonify, request
 
 import db
 from services import export
@@ -44,9 +44,9 @@ def import_json():
     try:
         counts = export.import_json(s, payload.get("data") or {})
         s.commit()
-    except ValueError as e:
+    except ValueError:
         s.rollback()
-        return jsonify(error=str(e)), 400
+        return jsonify(error="not a valid AlphaBridge export for this version"), 400
     return jsonify(imported=counts)
 
 
@@ -62,8 +62,9 @@ def run_backup():
         return jsonify(error="set BACKUP_DEST (local, webdav or s3) first"), 400
     try:
         return jsonify(path=export.run_backup(db.session()))
-    except Exception as e:  # destination errors are surfaced, not raised
-        return jsonify(error=f"{type(e).__name__}: {e}"), 502
+    except Exception:  # destination errors are logged server-side, not echoed
+        current_app.logger.exception("backup failed")
+        return jsonify(error="backup failed; see the server log"), 502
 
 
 @bp.get("/share/<token>/report.<fmt>")

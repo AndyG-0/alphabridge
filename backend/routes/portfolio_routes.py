@@ -4,7 +4,7 @@ import re
 from datetime import date
 
 import requests
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from pydantic import BaseModel, Field, field_validator
 
 import db
@@ -184,8 +184,9 @@ def simplefin_connect():
         return jsonify(error="setup_token required"), 400
     try:
         simplefin.connect(token)
-    except (ValueError, requests.RequestException) as e:
-        return jsonify(error=str(e)), 422
+    except (ValueError, requests.RequestException):
+        current_app.logger.warning("simplefin connect failed", exc_info=True)
+        return jsonify(error="SimpleFIN setup failed: check the setup token (single-use) and try again"), 422
     return jsonify(simplefin.status()), 201
 
 
@@ -193,8 +194,9 @@ def simplefin_connect():
 def simplefin_sync():
     try:
         return jsonify(simplefin.sync())
-    except (ValueError, requests.RequestException) as e:
-        return jsonify(error=str(e)), 422
+    except (ValueError, requests.RequestException):
+        current_app.logger.warning("simplefin sync failed", exc_info=True)
+        return jsonify(error="SimpleFIN sync failed: reconnect SimpleFIN in Settings if access was revoked (details are in the server log)"), 422
 
 
 @bp.delete("/simplefin")
@@ -217,7 +219,8 @@ def save_template():
     try:
         m = mapper.Mapping.model_validate(body.get("mapping") or {})
     except ValueError as e:
-        return jsonify(error=str(e)), 400
+        fields = [".".join(str(x) for x in err["loc"]) for err in getattr(e, "errors", lambda: [])()]
+        return jsonify(error="invalid mapping", fields=fields), 400
     s = db.session()
     t = s.query(ImportTemplate).filter_by(name=name).first() or ImportTemplate(name=name)
     t.mapping = m.model_dump()

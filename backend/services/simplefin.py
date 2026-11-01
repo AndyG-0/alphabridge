@@ -3,6 +3,7 @@ account balances. Balances are account-level totals, so each account becomes one
 balances (cards, loans) are skipped because debts live under Liabilities."""
 
 import base64
+import ipaddress
 from datetime import UTC, datetime
 from urllib.parse import urlsplit, urlunsplit
 
@@ -27,14 +28,30 @@ def _config() -> SimpleFinConfig:
     return cfg
 
 
+def _check_public_https(url: str) -> None:
+    """SSRF guard: the claim URL comes from user input, so require https and a public-looking host (no IP literals in private
+    ranges, no localhost/internal single-label names)."""
+    parts = urlsplit(url)
+    host = (parts.hostname or "").lower()
+    if parts.scheme != "https" or not host:
+        raise ValueError("Claim URL must be https")
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        if "." not in host or host.endswith((".local", ".internal", ".localhost", ".lan")):
+            raise ValueError("Claim URL host must be a public domain") from None
+    else:
+        if not ip.is_global:
+            raise ValueError("Claim URL host must be public")
+
+
 def claim(setup_token: str) -> str:
     """Setup token = base64(claim URL). POSTing to it returns the access URL (credentials embedded)."""
     try:
         url = base64.b64decode(setup_token.strip(), validate=True).decode()
     except Exception as e:
         raise ValueError("Setup token is not valid base64") from e
-    if urlsplit(url).scheme != "https":
-        raise ValueError("Claim URL must be https")
+    _check_public_https(url)
     r = requests.post(url, timeout=TIMEOUT)
     if r.status_code != 200 or not r.text.startswith("https://"):
         raise ValueError(f"SimpleFIN claim failed (HTTP {r.status_code}); setup tokens are single-use")
