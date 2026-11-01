@@ -8,6 +8,7 @@ const PAGES = [
   { name: 'Research Lab', path: '/research' },
   { name: 'Chat', path: '/chat' },
   { name: 'Settings', path: '/settings' },
+  { name: 'Onboarding', path: '/onboarding' },
 ]
 
 for (const theme of ['dark', 'light']) {
@@ -42,4 +43,15 @@ test('nav switches pages', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('link', { name: 'Settings' }).click()
   await expect(page).toHaveURL(/\/settings$/)
+})
+
+test('onboarding wizard is resumable and shows the completeness meter', async ({ page }) => {
+  await page.goto('/onboarding')
+  await expect(page.getByRole('progressbar', { name: 'Data completeness' })).toBeVisible()
+  const saved = page.waitForResponse((r) => r.url().includes('/api/onboarding') && r.request().method() === 'PUT')
+  await page.getByRole('button', { name: /^Goals/ }).click()
+  await saved
+  await expect(page.getByLabel(/Age you want to stop working/)).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Goals' })).toBeVisible()
 })

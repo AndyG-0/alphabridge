@@ -85,6 +85,7 @@ def create_app(overrides: dict | None = None) -> Flask:
         "rmd_routes",
         "spending_routes",
         "export_routes",
+        "onboarding_routes",
     ):
         app.register_blueprint(importlib.import_module(f"routes.{mod}").bp)
 

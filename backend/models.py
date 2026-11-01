@@ -59,6 +59,7 @@ class UserProfile(Base):
     spending_model: Mapped[dict] = mapped_column(JSON, default=dict)  # services/spending.py SpendingModel; {} = flat spending
     target_allocation: Mapped[dict] = mapped_column(JSON, default=dict)  # {asset_class: weight} summing to 1; {} = none set (performance, rebalancing)
     dca_plan: Mapped[dict] = mapped_column(JSON, default=dict)  # {amount, tranches, schedule: [{on, amount}], notified: [on]}; {} = none
+    onboarding: Mapped[dict] = mapped_column(JSON, default=dict)  # services/onboarding.py wizard state: {step, skipped, completed, dismissed}
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
 
     @property

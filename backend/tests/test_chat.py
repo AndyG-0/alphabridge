@@ -176,6 +176,7 @@ def test_every_read_route_family_has_a_chat_tool(client):
         "/api/planner/stress",
         "/api/rmd",
         "/api/spending/actuals",
+        "/api/onboarding",
         "/api/rmd/inherited",
         "/api/liabilities",
         "/api/pensions",

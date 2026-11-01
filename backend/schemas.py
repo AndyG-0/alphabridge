@@ -6,6 +6,13 @@ from pydantic import BaseModel, Field, field_validator
 from services import spending, state_rules
 
 
+class OnboardingIn(BaseModel):
+    step: Literal["household", "accounts", "upload", "goals", "plan"] | None = None  # resume point
+    skip: Literal["household", "accounts", "upload", "goals", "plan"] | None = None  # mark a step skipped
+    completed: bool | None = None
+    dismissed: bool | None = None
+
+
 class ProfileIn(BaseModel):
     name: str | None = None
     birth_date: date | None = None

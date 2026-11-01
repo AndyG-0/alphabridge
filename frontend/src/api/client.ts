@@ -78,6 +78,31 @@ export interface Holding {
   current_price: number
   cost_basis_total: number
 }
+export interface OnboardingInput {
+  key: string
+  label: string
+  weight: number
+  filled: boolean
+  improves: string
+  where: string
+}
+export interface OnboardingStep {
+  id: 'household' | 'accounts' | 'upload' | 'goals' | 'plan'
+  title: string
+  blurb: string
+  done: boolean
+  skipped: boolean
+}
+export interface Onboarding {
+  current: OnboardingStep['id']
+  steps: OnboardingStep[]
+  completed: boolean
+  dismissed: boolean
+  show: boolean
+  first_run: boolean
+  completeness: { score: number; inputs: OnboardingInput[]; next_best: { key: string; label: string; improves: string; where: string } | null }
+}
+
 export interface Account {
   id: number
   name: string
@@ -127,6 +152,8 @@ export interface NetWorthSummary {
   assumptions: { annual_return: number; monthly_contribution: number; baseline: string | null }
 }
 export interface Profile {
+  name: string
+  tax_filing_status: 'SINGLE' | 'MFJ'
   birth_date: string
   spouse_birth_date: string | null
   current_age: number
@@ -842,6 +869,9 @@ export type ThesisRow = {
 }
 
 export const api = {
+  onboarding: () => req<Onboarding>('/onboarding'),
+  saveOnboarding: (b: { step?: OnboardingStep['id']; skip?: OnboardingStep['id']; completed?: boolean; dismissed?: boolean }) =>
+    req<Onboarding>('/onboarding', json('PUT', b)),
   dcf: (sym: string) => req<DcfGrid>(`/research/dcf/${sym}`),
   watchlist: () => req<WatchRow[]>('/research/watchlist'),
   addWatch: (b: { symbol: string; note?: string; buy_below?: number | null }) => req<WatchRow>('/research/watchlist', json('POST', b)),

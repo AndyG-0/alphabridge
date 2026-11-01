@@ -211,7 +211,7 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
   - *Acceptance:* migrate components incrementally; light/dark; keyboard navigation; axe clean (E5).
   - *Touch:* `frontend/src/components/`
   - *Depends:* E4
-- [ ] **U2 Onboarding wizard** — household → accounts → upload → goals → first plan.
+- [x] **U2 Onboarding wizard** — household → accounts → upload → goals → first plan. (Done: `/onboarding` route with resumable steps persisted on `UserProfile.onboarding` (migration `d5e6f7a8b9c0`), skip/dismiss/finish, `GET/PUT /api/onboarding` + `get_onboarding_status` chat tool; server-computed data-completeness score (weighted inputs, each with what it improves and where to enter it) shown in the wizard and as a Dashboard card until setup is complete; brand-new installs redirect from `/` to the wizard; pytest, vitest and Playwright (axe, both themes) cover it. Left: the upload step links to the Portfolio dropzone instead of embedding it.)
   - *Acceptance:* resumable steps; data-completeness meter explaining which inputs improve accuracy; component + e2e tests.
   - *Touch:* `frontend/src/pages/`, `backend/routes/`
   - *Depends:* E5

@@ -1,24 +1,33 @@
 import { FlaskConical, FolderUp, Home, MessageCircle, Moon, Settings as Cog, Sun, Sunset } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
-import { setToken } from './api/client'
+import { api, setToken } from './api/client'
 import { Button, Input } from './components/ui'
+import { useAsync } from './hooks'
 import { useTheme } from './lib/theme'
 import Chat from './pages/Chat'
 import Dashboard from './pages/Dashboard'
+import Onboarding from './pages/Onboarding'
 import PortfolioDropzone from './pages/PortfolioDropzone'
 import ResearchLab from './pages/ResearchLab'
 import RetirementPlan from './pages/RetirementPlan'
 import Settings from './pages/Settings'
 
 const TABS = [
-  { path: '/', label: 'Command', icon: Home, el: <Dashboard /> },
+  { path: '/', label: 'Command', icon: Home, el: <DashboardGate /> },
   { path: '/plan', label: 'Plan', icon: Sunset, el: <RetirementPlan /> },
   { path: '/portfolio', label: 'Portfolio', icon: FolderUp, el: <PortfolioDropzone /> },
   { path: '/research', label: 'Analyst', icon: FlaskConical, el: <ResearchLab /> },
   { path: '/chat', label: 'Ask AI', icon: MessageCircle, el: <Chat /> },
   { path: '/settings', label: 'Settings', icon: Cog, el: <Settings /> },
 ]
+
+/** Brand-new installs (no data, setup not dismissed) land on the wizard instead of an empty dashboard. */
+function DashboardGate() {
+  const ob = useAsync(api.onboarding)
+  if (ob.data?.first_run && ob.data.show) return <Navigate to="/onboarding" replace />
+  return <Dashboard />
+}
 
 function Login({ onDone }: { onDone: () => void }) {
   const [t, setT] = useState('')
@@ -90,6 +99,7 @@ export default function App() {
           {TABS.map(({ path, el }) => (
             <Route key={path} path={path === '/chat' ? '/chat/:sessionId?' : path} element={el} />
           ))}
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

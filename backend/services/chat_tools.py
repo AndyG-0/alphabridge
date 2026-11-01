@@ -30,6 +30,7 @@ from services import (
     hsa,
     market_data,
     networth,
+    onboarding,
     performance,
     planner,
     rebalance,
@@ -322,6 +323,12 @@ TOOLS = [
         "get_spending_actuals",
         "Measured monthly spending from imported transactions vs the plan assumption: average, by category, lifestyle-creep flag, uncategorized count.",
         _obj({"months": {"type": "integer"}}),
+    ),
+    (
+        "get_onboarding_status",
+        "Setup progress: which wizard steps are done (household, accounts, upload, goals, first plan) and a 0-100 data-completeness score with, "
+        "for each missing input, what it would make more accurate. Use to explain why a result may be imprecise.",
+        _obj({}),
     ),
     ("get_ingestion_log", "Recent file imports: filename, parser, rows, status (OK/ERROR/UNDONE), message.", _obj({"limit": {"type": "integer"}})),
     (
@@ -891,6 +898,7 @@ HANDLERS = {
     "get_ingestion_log": _ingest_log,
     "get_spending_actuals": lambda a: transactions.actuals(get_profile(), months=int(a.get("months") or 12)),
     "get_data_gaps": lambda a: _gaps(),
+    "get_onboarding_status": lambda a: onboarding.status(db.session(), get_profile()),
     "get_screener_results": _screener,
     "get_sector_overview": lambda a: market_data.sector_strength(),
     "get_notification_status": lambda a: _notifications(),
