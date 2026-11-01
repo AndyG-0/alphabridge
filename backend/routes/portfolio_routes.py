@@ -9,7 +9,7 @@ from models import Account, AllowedPlanMenu, CashFlow, Holding, IngestionLog, Li
 from routes._helpers import get_profile
 from schemas import AccountIn, ConfirmedIngest, PlanMenuItemIn, ProfileIn, ProxyMapIn
 from security import safe_filename, validate_upload
-from services import corporate_actions, doc_reader, ingestion, institutions, market_data, networth, performance, xray
+from services import corporate_actions, doc_reader, ingestion, institutions, market_data, networth, performance, rebalance, xray
 
 bp = Blueprint("portfolio", __name__, url_prefix="/api")
 
@@ -384,6 +384,17 @@ def performance_report(assume: bool) -> dict:
 @bp.get("/performance")
 def performance_get():
     return jsonify(performance_report(request.args.get("assume_contributions") in ("1", "true")))
+
+
+@bp.get("/rebalance")
+def rebalance_get():
+    try:
+        threshold = float(request.args.get("threshold", rebalance.DEFAULT_THRESHOLD))
+    except ValueError:
+        return jsonify({"error": "threshold must be a number"}), 400
+    if not 0 < threshold < 1:
+        return jsonify({"error": "threshold must be between 0 and 1"}), 400
+    return jsonify(rebalance.report(db.session(), get_profile(), threshold))
 
 
 def menu_dict(m: AllowedPlanMenu) -> dict:

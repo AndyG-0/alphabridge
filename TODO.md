@@ -153,7 +153,7 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
   - *Acceptance:* TWR and MWR, vs benchmark and vs target allocation, fee drag, dividend/income calendar; tested against hand-computed examples.
   - *Touch:* `backend/services/performance.py`, `backend/models.py`
   - *Depends:* D3
-- [ ] **I3 Rebalancing + asset location** — drift and trades.
+- [x] **I3 Rebalancing + asset location** — drift and trades. (Done: `services/rebalance.py` — drift vs `UserProfile.target_allocation` with a threshold (default 5 points) and a daily `daily_checks` alert through the notifier; self-funding trade list where every sell/buy pair sits in one account, 401(k) buys limited to `AllowedPlanMenu` (cheapest expense ratio), tax-advantaged accounts used first and taxable sells ordered lowest-gain first, realized gains priced with `tax.ltcg_tax` stacked on ordinary income; unfillable remainders are reported as `unresolved` (direct new money there); asset-location suggestions from `data/asset_location.json` with an estimated annual tax drag; `GET /api/rebalance`, `get_rebalance_plan` chat tool, Rebalance card with a target-allocation editor. Property test: trades net to zero per account and never raise drift. Left: gains use average cost and assume long-term until I4 lots land; no `planner.py` hook; no wash-sale check on the suggested buys.)
   - *Acceptance:* target allocation, drift alerts, trade list that respects 401(k) menus (`AllowedPlanMenu`) and minimizes realized gains in taxable; asset-location suggestions.
   - *Touch:* `backend/services/rebalance.py`, `backend/services/planner.py`
   - *Depends:* P1

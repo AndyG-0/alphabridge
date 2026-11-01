@@ -21,7 +21,23 @@ from models import (
     ScreenerResult,
 )
 from routes._helpers import get_profile
-from services import early_access, household, hsa, market_data, networth, performance, planner, rmd, roth, scenarios, spending, state_rules, withdrawals, xray
+from services import (
+    early_access,
+    household,
+    hsa,
+    market_data,
+    networth,
+    performance,
+    planner,
+    rebalance,
+    rmd,
+    roth,
+    scenarios,
+    spending,
+    state_rules,
+    withdrawals,
+    xray,
+)
 from services import pension as pension_svc
 from services import quant_engine as qe
 from services import research_pipeline as rp
@@ -317,6 +333,12 @@ TOOLS = [
         "Portfolio time-weighted and money-weighted return, comparison with SPY and the target allocation, fee drag from expense ratios, "
         "and a monthly dividend/interest income calendar (deterministic).",
         _obj({"assume_contributions": {"type": "boolean"}}),
+    ),
+    (
+        "get_rebalance_plan",
+        "Drift from the target allocation, a self-funding trade list that respects 401(k) menus and minimizes realized gains in taxable, "
+        "estimated tax on those gains, and asset-location suggestions (deterministic).",
+        _obj({"threshold": {"type": "number"}}),
     ),
     (
         "grade_401k_menu",
@@ -816,6 +838,7 @@ HANDLERS = {
     "get_performance": lambda a: performance.report(
         db.session(), get_profile(), market_data.get_closes, market_data.get_fundamentals, assume_contributions=bool(a.get("assume_contributions"))
     ),
+    "get_rebalance_plan": lambda a: rebalance.report(db.session(), get_profile(), float(a.get("threshold") or rebalance.DEFAULT_THRESHOLD)),
     "grade_401k_menu": _menu,
 }
 

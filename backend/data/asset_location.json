@@ -1,0 +1,22 @@
+{
+  "_source": "General tax-efficiency guidance: interest and non-qualified distributions are taxed at ordinary rates, so hold them in tax-deferred accounts; qualified dividends and long-term gains get preferential rates and a basis step-up, so broad equity suits taxable accounts; the highest expected growth belongs in Roth where gains are never taxed. https://www.bogleheads.org/wiki/Tax-efficient_fund_placement",
+  "_retrieved_on": "2026-10-31",
+  "buckets": ["PRE_TAX_401K", "TAXABLE_BROKERAGE", "ROTH", "HSA"],
+  "preferred": {
+    "BOND": ["PRE_TAX_401K", "HSA", "ROTH", "TAXABLE_BROKERAGE"],
+    "MONEY_MARKET": ["PRE_TAX_401K", "HSA", "ROTH", "TAXABLE_BROKERAGE"],
+    "US_EQUITY": ["TAXABLE_BROKERAGE", "ROTH", "HSA", "PRE_TAX_401K"],
+    "INTL_EQUITY": ["TAXABLE_BROKERAGE", "ROTH", "HSA", "PRE_TAX_401K"],
+    "SECTOR_ETF": ["ROTH", "HSA", "TAXABLE_BROKERAGE", "PRE_TAX_401K"],
+    "INDIVIDUAL_STOCK": ["ROTH", "HSA", "TAXABLE_BROKERAGE", "PRE_TAX_401K"]
+  },
+  "taxable_yield_assumption": {
+    "BOND": 0.04,
+    "MONEY_MARKET": 0.04,
+    "US_EQUITY": 0.013,
+    "INTL_EQUITY": 0.03,
+    "SECTOR_ETF": 0.01,
+    "INDIVIDUAL_STOCK": 0.01
+  },
+  "ordinary_income_classes": ["BOND", "MONEY_MARKET"]
+}

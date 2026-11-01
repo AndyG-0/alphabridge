@@ -119,6 +119,7 @@ export interface Profile {
   money_market_yield_override: boolean
   effective_tax_rate: number
   monthly_contribution: number
+  target_allocation?: Record<string, number>
   risk_appetite: number
   sector_concentration_limit: number
   employer_symbol: string
@@ -648,7 +649,41 @@ export type Performance = {
   }
 }
 
+export type RebalanceTrade = {
+  account_id: number
+  account: string
+  tax_bucket: string
+  action: 'BUY' | 'SELL'
+  symbol: string
+  name?: string
+  asset_class: string
+  amount: number
+  realized_gain: number
+}
+export type Rebalance = {
+  has_target: boolean
+  notes: string[]
+  drift?: {
+    total: number
+    total_drift: number
+    threshold: number
+    breached: boolean
+    rows: { asset_class: string; current: number; target: number; drift: number; dollars: number; breach: boolean }[]
+  }
+  trades?: RebalanceTrade[]
+  unresolved?: { sell: Record<string, number>; buy: Record<string, number> }
+  realized_gains?: number
+  est_tax?: number
+  after?: { total_drift: number }
+  asset_location: {
+    marginal_rate: number
+    note: string
+    suggestions: { symbol: string; account: string; from_bucket: string; to_bucket: string; value: number; est_annual_tax_drag: number; why: string }[]
+  }
+}
+
 export const api = {
+  rebalance: () => req<Rebalance>('/rebalance'),
   performance: (assume = false) => req<Performance>(`/performance${assume ? '?assume_contributions=1' : ''}`),
   cashFlows: () => req<CashFlowRow[]>('/cashflows'),
   addCashFlow: (f: { on: string; amount: number; note?: string }) => req<CashFlowRow>('/cashflows', json('POST', f)),

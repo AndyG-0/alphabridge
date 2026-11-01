@@ -72,6 +72,29 @@ def daily_checks(app):
                 )
             except RuntimeError as e:
                 log.warning("notify failed: %s", e)
+        _rebalance_alert(s, p)
+
+
+def _rebalance_alert(s, profile):
+    """Notify when any asset class drifts past the threshold from the target allocation (no-op without a target)."""
+    from models import Account
+    from services import notifier, rebalance
+
+    if not profile.target_allocation:
+        return
+    d = rebalance.drift(rebalance.class_values([h for a in s.query(Account).all() for h in a.holdings]), profile.target_allocation)
+    if not d["breached"]:
+        return
+    rows = [r for r in d["rows"] if r["breach"]]
+    try:
+        notifier.notify(
+            "Rebalance needed",
+            "Allocation has drifted past your threshold.",
+            "warn",
+            [(r["asset_class"], f"{r['current']:.0%} vs target {r['target']:.0%}") for r in rows],
+        )
+    except RuntimeError as e:
+        log.warning("notify failed: %s", e)
 
 
 @_tracked("net_worth_snapshot")
