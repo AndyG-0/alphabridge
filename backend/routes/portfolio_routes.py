@@ -277,10 +277,10 @@ def ingest_log():
 def ingest_undo(log_id):
     try:
         return jsonify(ingestion.undo_import(db.session(), log_id))
-    except LookupError as e:
-        return jsonify(error=str(e)), 404
-    except ValueError as e:
-        return jsonify(error=str(e)), 409
+    except LookupError:
+        return jsonify(error="import not found"), 404
+    except ValueError:
+        return jsonify(error="this import can't be undone (it was already undone, or holdings changed since)"), 409
 
 
 class SplitIn(BaseModel):
@@ -304,8 +304,8 @@ def holding_split(hid):
     body = SplitIn.model_validate(request.get_json(force=True))
     try:
         out = corporate_actions.split(h, body.ratio)
-    except ValueError as e:
-        return jsonify(error=str(e)), 400
+    except ValueError:
+        return jsonify(error="split ratio must be positive"), 400
     s.commit()
     return jsonify(out)
 
@@ -319,8 +319,8 @@ def holding_spinoff(hid):
     b = SpinoffIn.model_validate(request.get_json(force=True))
     try:
         out = corporate_actions.spinoff(s, h, b.symbol, b.shares, b.basis_fraction, b.price, b.name)
-    except ValueError as e:
-        return jsonify(error=str(e)), 400
+    except ValueError:
+        return jsonify(error="invalid spin-off: shares must be positive, basis fraction between 0 and 1, and the symbol different"), 400
     s.flush()
     ingestion.snapshot_net_worth(s)
     s.commit()

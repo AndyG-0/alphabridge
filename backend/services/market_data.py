@@ -1,6 +1,7 @@
 """Cached yfinance + FRED + EDGAR access. Everything network-bound lives here so it can be mocked."""
 
 import contextlib
+import logging
 import time
 from datetime import UTC, datetime, timedelta
 
@@ -210,8 +211,9 @@ def macro_snapshot(fred_key: str = "", ttl: int = 3600) -> dict:
             vix = _fred_latest("VIXCLS", fred_key)[0]
             cpis = _fred_latest("CPIAUCSL", fred_key, 13)
             cpi = cpis[0] / cpis[12] - 1
-        except Exception as e:
-            notes.append(f"FRED error: {e}")
+        except Exception:
+            logging.getLogger(__name__).warning("FRED request failed", exc_info=True)
+            notes.append("FRED unavailable; using Yahoo fallbacks")
     if tbill is None:
         tbill = (get_closes("^IRX", "5d", 3600) or [4.5])[-1] / 100
         notes.append("3M T-Bill from Yahoo ^IRX")

@@ -73,8 +73,8 @@ def deep_dive():
         rep = rp.deep_dive(data.symbol, "ON_DEMAND", current_app.config["FRED_API_KEY"], current_app.config["EDGAR_IDENTITY"], budget=budget)
     except LLMNotConfigured as e:
         return jsonify(error=str(e)), 400
-    except rx.BudgetExceeded as e:
-        return jsonify(error=str(e)), 429
+    except rx.BudgetExceeded:
+        return jsonify(error="Token budget for this research run is used up; raise it in Settings"), 429
     return jsonify(report_dict(rep)), 201
 
 
@@ -105,8 +105,9 @@ def insiders(sym: str):
         return jsonify(error="Invalid symbol"), 400
     try:
         return jsonify(rw.insiders_for(sym.upper(), current_app.config["EDGAR_IDENTITY"]))
-    except Exception as e:
-        return jsonify(error=f"SEC data unavailable: {e}"), 503
+    except Exception:
+        current_app.logger.exception("insiders: SEC data unavailable")
+        return jsonify(error="SEC data unavailable"), 503
 
 
 class WatchIn(BaseModel):

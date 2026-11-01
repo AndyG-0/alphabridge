@@ -352,8 +352,9 @@ def cash():
     p = get_profile()
     try:
         market, notes = market_data.market_inputs(current_app.config["FRED_API_KEY"])
-    except Exception as e:
-        return jsonify(error=f"Market data unavailable: {e}"), 503
+    except Exception:
+        current_app.logger.exception("cash plan: market data unavailable")
+        return jsonify(error="Market data unavailable"), 503
     mmf = p.current_money_market_yield if p.money_market_yield_override else max(market.tbill_3m - 0.0015, 0)
     rec = planner.cash_recommendation(s, p, mmf, market)
     rec["market"] = market.__dict__

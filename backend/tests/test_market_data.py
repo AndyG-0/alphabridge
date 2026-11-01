@@ -125,7 +125,7 @@ def test_macro_snapshot_fred_error_falls_back(monkeypatch):
     _stub_closes(monkeypatch, [])
     monkeypatch.setattr(md, "_fred_latest", lambda *a, **k: (_ for _ in ()).throw(OSError("boom")))
     m = md.macro_snapshot("key")
-    assert any("FRED error" in n for n in m["notes"]) and m["tbill_3m"] == pytest.approx(0.04)
+    assert any("FRED unavailable" in n for n in m["notes"]) and m["tbill_3m"] == pytest.approx(0.04)
 
 
 def test_market_inputs(monkeypatch):
