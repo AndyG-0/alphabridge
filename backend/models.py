@@ -4,6 +4,7 @@ from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Integer
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from services.age import age_on
+from userctx import current_user_id
 
 
 def utcnow():
@@ -82,7 +83,7 @@ class UserProfile(Base):
 class Account(Base):
     __tablename__ = "account"
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=1)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=current_user_id)
     name: Mapped[str] = mapped_column(String(160))
     institution: Mapped[str] = mapped_column(String(40), default="OTHER")
     tax_bucket: Mapped[str] = mapped_column(String(40), default="TAXABLE_BROKERAGE")
@@ -229,7 +230,7 @@ class Scenario(Base):
 
     __tablename__ = "scenario"
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=1)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=current_user_id)
     name: Mapped[str] = mapped_column(String(160))
     overrides: Mapped[dict] = mapped_column(JSON, default=dict)
     shock: Mapped[float] = mapped_column(Float, default=0)  # e.g. -0.30
@@ -241,7 +242,7 @@ class Scenario(Base):
 class Liability(Base):
     __tablename__ = "liability"
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=1)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=current_user_id)
     name: Mapped[str] = mapped_column(String(160))
     kind: Mapped[str] = mapped_column(String(20), default="OTHER")  # MORTGAGE|AUTO|CARD|STUDENT|HELOC|OTHER
     balance: Mapped[float] = mapped_column(Float, default=0)
@@ -264,7 +265,7 @@ class PlannedEvent(Base):
 
     __tablename__ = "planned_event"
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=1)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=current_user_id)
     name: Mapped[str] = mapped_column(String(160))
     kind: Mapped[str] = mapped_column(String(12), default="PURCHASE")  # PURCHASE|INFLOW|PENSION|LTC + income-stream kinds (see income_streams.py)
     amount: Mapped[float] = mapped_column(Float, default=0)  # lump sum, or monthly for PENSION
@@ -290,7 +291,7 @@ class Pension(Base):
     __tablename__ = "pension"
     __table_args__ = (UniqueConstraint("user_id", "owner", name="uq_pension_user_owner"),)
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=1)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=current_user_id)
     owner: Mapped[str] = mapped_column(String(10), default="SELF")  # SELF | SPOUSE
     name: Mapped[str] = mapped_column(String(160), default="Pension")
     plan_balance: Mapped[float] = mapped_column(Float, default=0)
@@ -314,7 +315,7 @@ class ChatSession(Base):
 
     __tablename__ = "chat_session"
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=1)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=current_user_id)
     title: Mapped[str] = mapped_column(String(160), default="New chat")
     title_source: Mapped[str] = mapped_column(String(10), default="auto")  # auto | user (a user rename is never overwritten)
     scenario: Mapped[str] = mapped_column(String(80), default="")  # optional label such as "Retire at 52"
@@ -471,10 +472,36 @@ class ActionItem(Base):
     __tablename__ = "action_item"
     __table_args__ = (UniqueConstraint("user_id", "key", name="uq_action_user_key"),)
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=1)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=current_user_id)
     key: Mapped[str] = mapped_column(String(120), index=True)  # e.g. "rebalance:2026-10"; the period suffix lets a done item come back later
     kind: Mapped[str] = mapped_column(String(30), default="")
     status: Mapped[str] = mapped_column(String(10), default="open")  # open | snoozed | done
     snooze_until: Mapped[date | None] = mapped_column(Date, nullable=True)
     notified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+# Tenant scoping (see db._scope_to_user). A test fails when a table is in none of these groups, so new models must be classified.
+USER_SCOPED = (Account, Scenario, Liability, PlannedEvent, Pension, ChatSession, ActionItem)
+ACCOUNT_CHILDREN = (Holding, TaxLot, AllowedPlanMenu)
+SHARED_TABLES = {
+    "user_profile",  # the tenants themselves: reached through routes._helpers.get_profile()
+    "ingestion_log",  # account_id nullable: scoped through its account in db._scope_to_user
+    "chat_message",  # reached only through its ChatSession
+    "net_worth_snapshot",
+    "cash_flow",
+    "transaction",
+    "spending_transaction",
+    "category_rule",
+    "simplefin_config",
+    "import_template",
+    "research_report",
+    "llm_config",
+    "notification_config",
+    "market_cache",
+    "screener_result",
+    "assumption_override",
+    "run_snapshot",
+    "watchlist_item",
+    "thesis_record",
+}  # household-level or market-wide data without a user_id yet (U7 follow-up in TODO.md)

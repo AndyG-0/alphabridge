@@ -2,6 +2,7 @@
 import { Info } from 'lucide-react'
 import { useId } from 'react'
 import type { InputHTMLAttributes, ReactNode } from 'react'
+import { isPrivate, MASK } from '../lib/privacy'
 import { cn } from '../lib/utils'
 import { Badge as BadgeBase } from './ui/badge'
 import { Button } from './ui/button'
@@ -12,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
 export { Button }
 
 export const usd = (n: number | null | undefined) =>
-  n == null ? '—' : n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+  n == null ? '—' : isPrivate() ? MASK : n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 export const pct = (n: number | null | undefined, d = 1) => (n == null ? '—' : `${(n * 100).toFixed(d)}%`)
 
 export function Card({ title, children, className }: { title?: string; children: ReactNode; className?: string }) {

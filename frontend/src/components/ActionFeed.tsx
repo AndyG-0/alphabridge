@@ -2,6 +2,7 @@ import { ArrowRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { api, type ActionItem } from '../api/client'
 import { useAsync } from '../hooks'
+import { t } from '../i18n'
 import { Badge, Button, Err, usd } from './ui'
 
 const TONE = (p: number) => (p >= 70 ? 'red' : p >= 50 ? 'amber' : 'slate')
@@ -17,7 +18,7 @@ export default function ActionFeed({ limit, showHidden = false }: { limit?: numb
     await fn
     feed.reload()
   }
-  if (items.length === 0) return <p className="text-sm text-slate-400">Nothing needs your attention right now.</p>
+  if (items.length === 0) return <p className="text-sm text-slate-400">{t('actions.empty')}</p>
   return (
     <div>
       <ul className="divide-y divide-slate-800">
@@ -55,15 +56,15 @@ function Row({ item: i, act }: { item: ActionItem; act: (p: Promise<unknown>) =>
         {open ? (
           <>
             <Button variant="ghost" aria-label={`Snooze 1 wk: ${i.title}`} onClick={() => act(api.actionSnooze(i.key, 7))}>
-              Snooze 1 wk
+              {t('actions.snooze')}
             </Button>
             <Button aria-label={`Done: ${i.title}`} onClick={() => act(api.actionDone(i.key))}>
-              Done
+              {t('actions.done')}
             </Button>
           </>
         ) : (
           <Button variant="ghost" aria-label={`Reopen: ${i.title}`} onClick={() => act(api.actionReopen(i.key))}>
-            Reopen
+            {t('actions.reopen')}
           </Button>
         )}
       </div>

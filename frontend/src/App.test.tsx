@@ -67,4 +67,15 @@ describe('api client', () => {
   it('ApiError carries the status', () => {
     expect(new ApiError(404, 'nope').status).toBe(404)
   })
+
+  it('toggles privacy mode from the nav and remembers it', async () => {
+    const user = userEvent.setup()
+    renderAt('/')
+    const btn = (await screen.findAllByRole('button', { name: 'Hide balances' }))[0]
+    await user.click(btn)
+    expect((await screen.findAllByRole('button', { name: 'Show balances' }))[0]).toHaveAttribute('aria-pressed', 'true')
+    expect(localStorage.getItem('ab-privacy')).toBe('1')
+    await user.click(screen.getAllByRole('button', { name: 'Show balances' })[0])
+    expect(localStorage.getItem('ab-privacy')).toBe('0')
+  })
 })
