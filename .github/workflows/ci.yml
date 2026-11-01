@@ -10,6 +10,14 @@ permissions:
   contents: read
 
 jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    env: { SKIP: mypy,pytest,tsc,eslint,prettier }  # heavy hooks run in the jobs below
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: uvx pre-commit run --all-files --show-diff-on-failure
+
   backend:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: backend } }

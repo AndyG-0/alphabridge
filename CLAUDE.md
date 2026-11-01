@@ -32,6 +32,7 @@ Command Center, Portfolio & Dropzone, AI Analyst & What-If Lab, Settings. Mobile
 - Backend: `cd backend && source .venv/bin/activate && uv pip install -r requirements.txt && pytest && flask --app app run`
 - Frontend: `cd frontend && npm install && npm run dev` (proxies /api to :5000), `npm run build`
 - Hot-reload dev (native, no podman): `./dev.sh` (Flask `--debug` on :5001 + Vite on :5173; scheduler off unless `ENABLE_SCHEDULER=1`)
+- Git hooks: `make hooks` (commit: hygiene, ruff, gitleaks, eslint, prettier, private-data guard; push: mypy, pytest, tsc). CI re-runs them.
 - Seed demo data: `python -m seed`
 - Stack: `podman compose up --build` (or docker compose)
 

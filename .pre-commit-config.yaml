@@ -1,3 +1,4 @@
+default_install_hook_types: [pre-commit, pre-push]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -33,6 +34,8 @@ repos:
         entry: bash -c 'cd backend && .venv/bin/mypy .'
         language: system
         pass_filenames: false
+        require_serial: true
+        stages: [pre-push]
         files: ^backend/.*\.py$
       - id: eslint
         name: eslint
@@ -46,3 +49,24 @@ repos:
         language: system
         pass_filenames: false
         files: ^frontend/
+      - id: pytest
+        name: pytest (backend)
+        entry: bash -c 'cd backend && .venv/bin/pytest -q -n auto -x'
+        language: system
+        pass_filenames: false
+        require_serial: true
+        files: ^backend/
+        stages: [pre-push]
+      - id: tsc
+        name: tsc (frontend)
+        entry: bash -c 'cd frontend && npm run typecheck --silent'
+        language: system
+        pass_filenames: false
+        files: ^frontend/
+        stages: [pre-push]
+      - id: forbid-private-data
+        name: block .env, databases, statements
+        entry: bash -c 'echo "Refusing to commit private data:"; printf "%s\n" "$@"; exit 1' --
+        language: system
+        files: '(^|/)\.env$|\.(db|db-wal|csv|pdf|xlsx)$|^(data|samples|statements)/'
+        exclude: '^frontend/public/'

@@ -58,7 +58,8 @@ check: lint typecheck cov audit ## what CI runs
 ci: check
 
 hooks: ## install git pre-commit hooks
-	$(VENV)/bin/pre-commit install
+	$(VENV)/bin/pre-commit install --install-hooks
+	$(VENV)/bin/pre-commit install --hook-type pre-push
 
 clean:
 	rm -rf backend/.pytest_cache backend/.mypy_cache backend/.ruff_cache backend/htmlcov backend/.coverage frontend/dist frontend/coverage
