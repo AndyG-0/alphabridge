@@ -1,0 +1,37 @@
+{
+  "year": 2026,
+  "source_url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf",
+  "retrieved_on": "2026-10-31",
+  "notes": "Rev. Proc. 2025-32 (2026 inflation adjustments, as amended by P.L. 119-21). Brackets are taxable-income lower bounds; rate applies from that bound up to the next. The Social Security provisional-income thresholds (IRC 86) and NIIT thresholds (IRC 1411) are statutory and not indexed. IRMAA tiers are CMS 2026 MAGI thresholds (tax year 2024 income); the tier is the highest threshold the MAGI exceeds.",
+  "standard_deduction": {"SINGLE": 16100, "MFJ": 32200},
+  "ordinary_brackets": {
+    "SINGLE": [[0, 0.10], [12400, 0.12], [50400, 0.22], [105700, 0.24], [201775, 0.32], [256225, 0.35], [640600, 0.37]],
+    "MFJ": [[0, 0.10], [24800, 0.12], [100800, 0.22], [211400, 0.24], [403550, 0.32], [512450, 0.35], [768700, 0.37]]
+  },
+  "ltcg": {
+    "SINGLE": {"zero_up_to": 49450, "fifteen_up_to": 545500},
+    "MFJ": {"zero_up_to": 98900, "fifteen_up_to": 613700},
+    "rates": [0.0, 0.15, 0.20]
+  },
+  "niit": {
+    "rate": 0.038,
+    "threshold": {"SINGLE": 200000, "MFJ": 250000},
+    "source_url": "https://www.irs.gov/taxtopics/tc559"
+  },
+  "social_security": {
+    "source_url": "https://www.irs.gov/pub/irs-pdf/p915.pdf",
+    "base": {"SINGLE": 25000, "MFJ": 32000},
+    "additional": {"SINGLE": 34000, "MFJ": 44000},
+    "first_tier_share": 0.5,
+    "max_share": 0.85
+  },
+  "irmaa": {
+    "source_url": "https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles",
+    "base_part_b_monthly": 202.90,
+    "tiers": {
+      "SINGLE": [[109000, 81.20, 14.50], [137000, 202.90, 37.50], [171000, 324.60, 60.40], [205000, 446.30, 83.30], [500000, 487.00, 91.00]],
+      "MFJ": [[218000, 81.20, 14.50], [274000, 202.90, 37.50], [342000, 324.60, 60.40], [410000, 446.30, 83.30], [750000, 487.00, 91.00]]
+    },
+    "tier_columns": ["magi_over", "part_b_surcharge_monthly", "part_d_surcharge_monthly"]
+  }
+}

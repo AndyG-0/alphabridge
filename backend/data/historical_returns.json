@@ -1,0 +1,597 @@
+{
+ "source_url": "https://pages.stern.nyu.edu/~adamodar/pc/datasets/histretSP.xls",
+ "retrieved_on": "2026-10-31",
+ "notes": "Aswath Damodaran, Historical Returns on Stocks, Bonds and Bills (NYU Stern). stocks = S&P 500 total return incl. dividends, bills = 3-month T-bill, bonds = 10-year US Treasury total return, inflation = CPI-U annual change (FRED CPIAUCNS, as carried in the same workbook). Annual calendar-year, nominal. Values copied from the workbook, rounded to 6 decimals. Index returns, before fees and taxes.",
+ "first_year": 1928,
+ "last_year": 2025,
+ "years": {
+  "1928": {
+   "stocks": 0.438112,
+   "bills": 0.0308,
+   "bonds": 0.008355,
+   "inflation": -0.011561
+  },
+  "1929": {
+   "stocks": -0.082979,
+   "bills": 0.0316,
+   "bonds": 0.042038,
+   "inflation": 0.005848
+  },
+  "1930": {
+   "stocks": -0.251236,
+   "bills": 0.0455,
+   "bonds": 0.045409,
+   "inflation": -0.063953
+  },
+  "1931": {
+   "stocks": -0.438375,
+   "bills": 0.0231,
+   "bonds": -0.025589,
+   "inflation": -0.093168
+  },
+  "1932": {
+   "stocks": -0.086424,
+   "bills": 0.0107,
+   "bonds": 0.087903,
+   "inflation": -0.10274
+  },
+  "1933": {
+   "stocks": 0.499822,
+   "bills": 0.0096,
+   "bonds": 0.018553,
+   "inflation": 0.007634
+  },
+  "1934": {
+   "stocks": -0.011886,
+   "bills": 0.002783,
+   "bonds": 0.079634,
+   "inflation": 0.015152
+  },
+  "1935": {
+   "stocks": 0.467404,
+   "bills": 0.001675,
+   "bonds": 0.04472,
+   "inflation": 0.029851
+  },
+  "1936": {
+   "stocks": 0.319434,
+   "bills": 0.001725,
+   "bonds": 0.050179,
+   "inflation": 0.014493
+  },
+  "1937": {
+   "stocks": -0.353367,
+   "bills": 0.002758,
+   "bonds": 0.013791,
+   "inflation": 0.028571
+  },
+  "1938": {
+   "stocks": 0.292827,
+   "bills": 0.00065,
+   "bonds": 0.042132,
+   "inflation": -0.027778
+  },
+  "1939": {
+   "stocks": -0.010976,
+   "bills": 0.000458,
+   "bonds": 0.044123,
+   "inflation": 0.0
+  },
+  "1940": {
+   "stocks": -0.106729,
+   "bills": 0.000358,
+   "bonds": 0.054025,
+   "inflation": 0.007143
+  },
+  "1941": {
+   "stocks": -0.127715,
+   "bills": 0.001292,
+   "bonds": -0.020222,
+   "inflation": 0.099291
+  },
+  "1942": {
+   "stocks": 0.191738,
+   "bills": 0.003425,
+   "bonds": 0.022949,
+   "inflation": 0.090323
+  },
+  "1943": {
+   "stocks": 0.250613,
+   "bills": 0.0038,
+   "bonds": 0.0249,
+   "inflation": 0.029586
+  },
+  "1944": {
+   "stocks": 0.190307,
+   "bills": 0.0038,
+   "bonds": 0.025776,
+   "inflation": 0.022988
+  },
+  "1945": {
+   "stocks": 0.358211,
+   "bills": 0.0038,
+   "bonds": 0.038044,
+   "inflation": 0.022472
+  },
+  "1946": {
+   "stocks": -0.084291,
+   "bills": 0.0038,
+   "bonds": 0.031284,
+   "inflation": 0.181319
+  },
+  "1947": {
+   "stocks": 0.052,
+   "bills": 0.006008,
+   "bonds": 0.009197,
+   "inflation": 0.088372
+  },
+  "1948": {
+   "stocks": 0.057046,
+   "bills": 0.01045,
+   "bonds": 0.01951,
+   "inflation": 0.029915
+  },
+  "1949": {
+   "stocks": 0.183032,
+   "bills": 0.01115,
+   "bonds": 0.046635,
+   "inflation": -0.020747
+  },
+  "1950": {
+   "stocks": 0.308055,
+   "bills": 0.012033,
+   "bonds": 0.004296,
+   "inflation": 0.059322
+  },
+  "1951": {
+   "stocks": 0.236785,
+   "bills": 0.015175,
+   "bonds": -0.002953,
+   "inflation": 0.06
+  },
+  "1952": {
+   "stocks": 0.18151,
+   "bills": 0.017225,
+   "bonds": 0.02268,
+   "inflation": 0.007547
+  },
+  "1953": {
+   "stocks": -0.012082,
+   "bills": 0.018908,
+   "bonds": 0.041438,
+   "inflation": 0.007491
+  },
+  "1954": {
+   "stocks": 0.525633,
+   "bills": 0.009375,
+   "bonds": 0.032898,
+   "inflation": -0.007435
+  },
+  "1955": {
+   "stocks": 0.325973,
+   "bills": 0.017243,
+   "bonds": -0.013364,
+   "inflation": 0.003745
+  },
+  "1956": {
+   "stocks": 0.074395,
+   "bills": 0.026214,
+   "bonds": -0.022558,
+   "inflation": 0.029851
+  },
+  "1957": {
+   "stocks": -0.104574,
+   "bills": 0.032246,
+   "bonds": 0.06797,
+   "inflation": 0.028986
+  },
+  "1958": {
+   "stocks": 0.4372,
+   "bills": 0.017665,
+   "bonds": -0.02099,
+   "inflation": 0.017606
+  },
+  "1959": {
+   "stocks": 0.120565,
+   "bills": 0.03386,
+   "bonds": -0.026466,
+   "inflation": 0.017301
+  },
+  "1960": {
+   "stocks": 0.003365,
+   "bills": 0.02873,
+   "bonds": 0.116395,
+   "inflation": 0.013605
+  },
+  "1961": {
+   "stocks": 0.266377,
+   "bills": 0.023525,
+   "bonds": 0.020609,
+   "inflation": 0.006711
+  },
+  "1962": {
+   "stocks": -0.088115,
+   "bills": 0.027724,
+   "bonds": 0.056935,
+   "inflation": 0.013333
+  },
+  "1963": {
+   "stocks": 0.226119,
+   "bills": 0.03156,
+   "bonds": 0.016842,
+   "inflation": 0.016447
+  },
+  "1964": {
+   "stocks": 0.164155,
+   "bills": 0.035457,
+   "bonds": 0.037281,
+   "inflation": 0.009709
+  },
+  "1965": {
+   "stocks": 0.123992,
+   "bills": 0.039491,
+   "bonds": 0.007189,
+   "inflation": 0.019231
+  },
+  "1966": {
+   "stocks": -0.09971,
+   "bills": 0.048557,
+   "bonds": 0.029079,
+   "inflation": 0.034591
+  },
+  "1967": {
+   "stocks": 0.23803,
+   "bills": 0.042935,
+   "bonds": -0.015806,
+   "inflation": 0.030395
+  },
+  "1968": {
+   "stocks": 0.108149,
+   "bills": 0.053376,
+   "bonds": 0.032746,
+   "inflation": 0.047198
+  },
+  "1969": {
+   "stocks": -0.082414,
+   "bills": 0.066685,
+   "bonds": -0.05014,
+   "inflation": 0.061972
+  },
+  "1970": {
+   "stocks": 0.035611,
+   "bills": 0.06391,
+   "bonds": 0.167547,
+   "inflation": 0.055703
+  },
+  "1971": {
+   "stocks": 0.142212,
+   "bills": 0.043343,
+   "bonds": 0.097869,
+   "inflation": 0.032663
+  },
+  "1972": {
+   "stocks": 0.187554,
+   "bills": 0.040618,
+   "bonds": 0.028184,
+   "inflation": 0.034063
+  },
+  "1973": {
+   "stocks": -0.14308,
+   "bills": 0.070354,
+   "bonds": 0.036587,
+   "inflation": 0.087059
+  },
+  "1974": {
+   "stocks": -0.259018,
+   "bills": 0.078458,
+   "bonds": 0.019886,
+   "inflation": 0.123377
+  },
+  "1975": {
+   "stocks": 0.369951,
+   "bills": 0.057864,
+   "bonds": 0.036053,
+   "inflation": 0.069364
+  },
+  "1976": {
+   "stocks": 0.23831,
+   "bills": 0.049766,
+   "bonds": 0.159846,
+   "inflation": 0.048649
+  },
+  "1977": {
+   "stocks": -0.069797,
+   "bills": 0.05261,
+   "bonds": 0.0129,
+   "inflation": 0.06701
+  },
+  "1978": {
+   "stocks": 0.065093,
+   "bills": 0.071783,
+   "bonds": -0.007776,
+   "inflation": 0.090177
+  },
+  "1979": {
+   "stocks": 0.185195,
+   "bills": 0.100543,
+   "bonds": 0.006707,
+   "inflation": 0.132939
+  },
+  "1980": {
+   "stocks": 0.317352,
+   "bills": 0.113919,
+   "bonds": -0.029897,
+   "inflation": 0.125163
+  },
+  "1981": {
+   "stocks": -0.047024,
+   "bills": 0.140362,
+   "bonds": 0.081992,
+   "inflation": 0.089224
+  },
+  "1982": {
+   "stocks": 0.204191,
+   "bills": 0.1109,
+   "bonds": 0.328145,
+   "inflation": 0.038298
+  },
+  "1983": {
+   "stocks": 0.223372,
+   "bills": 0.0895,
+   "bonds": 0.032002,
+   "inflation": 0.03791
+  },
+  "1984": {
+   "stocks": 0.061461,
+   "bills": 0.0992,
+   "bonds": 0.137334,
+   "inflation": 0.039487
+  },
+  "1985": {
+   "stocks": 0.312351,
+   "bills": 0.0772,
+   "bonds": 0.257125,
+   "inflation": 0.037987
+  },
+  "1986": {
+   "stocks": 0.184946,
+   "bills": 0.0615,
+   "bonds": 0.242842,
+   "inflation": 0.010979
+  },
+  "1987": {
+   "stocks": 0.058127,
+   "bills": 0.0596,
+   "bonds": -0.049605,
+   "inflation": 0.044344
+  },
+  "1988": {
+   "stocks": 0.165372,
+   "bills": 0.0689,
+   "bonds": 0.082236,
+   "inflation": 0.044194
+  },
+  "1989": {
+   "stocks": 0.314752,
+   "bills": 0.0839,
+   "bonds": 0.176936,
+   "inflation": 0.046473
+  },
+  "1990": {
+   "stocks": -0.030645,
+   "bills": 0.0775,
+   "bonds": 0.062354,
+   "inflation": 0.061063
+  },
+  "1991": {
+   "stocks": 0.302348,
+   "bills": 0.0554,
+   "bonds": 0.150045,
+   "inflation": 0.030643
+  },
+  "1992": {
+   "stocks": 0.074937,
+   "bills": 0.0351,
+   "bonds": 0.093616,
+   "inflation": 0.029007
+  },
+  "1993": {
+   "stocks": 0.099671,
+   "bills": 0.0307,
+   "bonds": 0.14211,
+   "inflation": 0.027484
+  },
+  "1994": {
+   "stocks": 0.013259,
+   "bills": 0.0437,
+   "bonds": -0.080367,
+   "inflation": 0.026749
+  },
+  "1995": {
+   "stocks": 0.371952,
+   "bills": 0.0566,
+   "bonds": 0.234808,
+   "inflation": 0.025384
+  },
+  "1996": {
+   "stocks": 0.22681,
+   "bills": 0.0515,
+   "bonds": 0.014286,
+   "inflation": 0.033225
+  },
+  "1997": {
+   "stocks": 0.331037,
+   "bills": 0.052,
+   "bonds": 0.099391,
+   "inflation": 0.017024
+  },
+  "1998": {
+   "stocks": 0.28338,
+   "bills": 0.0491,
+   "bonds": 0.149214,
+   "inflation": 0.016119
+  },
+  "1999": {
+   "stocks": 0.208854,
+   "bills": 0.0478,
+   "bonds": -0.082542,
+   "inflation": 0.026846
+  },
+  "2000": {
+   "stocks": -0.090318,
+   "bills": 0.06,
+   "bonds": 0.166553,
+   "inflation": 0.033868
+  },
+  "2001": {
+   "stocks": -0.118498,
+   "bills": 0.0348,
+   "bonds": 0.055722,
+   "inflation": 0.015517
+  },
+  "2002": {
+   "stocks": -0.21966,
+   "bills": 0.0164,
+   "bonds": 0.151164,
+   "inflation": 0.023769
+  },
+  "2003": {
+   "stocks": 0.283558,
+   "bills": 0.0103,
+   "bonds": 0.003753,
+   "inflation": 0.018795
+  },
+  "2004": {
+   "stocks": 0.107428,
+   "bills": 0.014,
+   "bonds": 0.044907,
+   "inflation": 0.032556
+  },
+  "2005": {
+   "stocks": 0.048345,
+   "bills": 0.0322,
+   "bonds": 0.028675,
+   "inflation": 0.034157
+  },
+  "2006": {
+   "stocks": 0.156126,
+   "bills": 0.0485,
+   "bonds": 0.01961,
+   "inflation": 0.025406
+  },
+  "2007": {
+   "stocks": 0.054847,
+   "bills": 0.0448,
+   "bonds": 0.102099,
+   "inflation": 0.040813
+  },
+  "2008": {
+   "stocks": -0.365523,
+   "bills": 0.014,
+   "bonds": 0.201013,
+   "inflation": 0.000914
+  },
+  "2009": {
+   "stocks": 0.259352,
+   "bills": 0.0015,
+   "bonds": -0.111167,
+   "inflation": 0.027213
+  },
+  "2010": {
+   "stocks": 0.148211,
+   "bills": 0.0014,
+   "bonds": 0.084629,
+   "inflation": 0.014957
+  },
+  "2011": {
+   "stocks": 0.020984,
+   "bills": 0.0005,
+   "bonds": 0.160353,
+   "inflation": 0.029624
+  },
+  "2012": {
+   "stocks": 0.158906,
+   "bills": 0.0009,
+   "bonds": 0.029716,
+   "inflation": 0.01741
+  },
+  "2013": {
+   "stocks": 0.321451,
+   "bills": 0.0006,
+   "bonds": -0.091046,
+   "inflation": 0.015017
+  },
+  "2014": {
+   "stocks": 0.135244,
+   "bills": 0.0003,
+   "bonds": 0.107462,
+   "inflation": 0.007565
+  },
+  "2015": {
+   "stocks": 0.013789,
+   "bills": 0.0005,
+   "bonds": 0.012843,
+   "inflation": 0.007295
+  },
+  "2016": {
+   "stocks": 0.117731,
+   "bills": 0.0032,
+   "bonds": 0.006906,
+   "inflation": 0.020746
+  },
+  "2017": {
+   "stocks": 0.216055,
+   "bills": 0.0095,
+   "bonds": 0.028017,
+   "inflation": 0.021091
+  },
+  "2018": {
+   "stocks": -0.042269,
+   "bills": 0.0197,
+   "bonds": -0.000167,
+   "inflation": 0.019102
+  },
+  "2019": {
+   "stocks": 0.312117,
+   "bills": 0.0211,
+   "bonds": 0.096356,
+   "inflation": 0.022851
+  },
+  "2020": {
+   "stocks": 0.180232,
+   "bills": 0.0036,
+   "bonds": 0.113319,
+   "inflation": 0.01362
+  },
+  "2021": {
+   "stocks": 0.284689,
+   "bills": 0.0004,
+   "bonds": -0.04416,
+   "inflation": 0.070364
+  },
+  "2022": {
+   "stocks": -0.180375,
+   "bills": 0.0209,
+   "bonds": -0.178282,
+   "inflation": 0.064544
+  },
+  "2023": {
+   "stocks": 0.260607,
+   "bills": 0.0528,
+   "bonds": 0.0388,
+   "inflation": 0.033521
+  },
+  "2024": {
+   "stocks": 0.248786,
+   "bills": 0.0518,
+   "bonds": -0.016372,
+   "inflation": 0.028881
+  },
+  "2025": {
+   "stocks": 0.177237,
+   "bills": 0.0421,
+   "bonds": 0.077955,
+   "inflation": 0.027351
+  }
+ }
+}

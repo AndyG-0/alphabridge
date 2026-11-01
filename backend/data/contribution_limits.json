@@ -1,0 +1,28 @@
+{
+  "source_url": "https://www.irs.gov/newsroom/401k-limit-increases-to-24500-for-2026-ira-limit-increases-to-7500",
+  "second_source_url": "https://www.irs.gov/pub/irs-drop/n-25-67.pdf",
+  "retrieved_on": "2026-10-31",
+  "notes": "IRS Notice 2025-67 (2026 limits). Only 2026 is tabulated; other years use the nearest tabulated year, so add a year row each autumn. 60-63 super catch-up (SECURE 2.0 sec. 109) replaces, not adds to, the age-50 catch-up. Roth IRA phase-out reduction is rounded up to the next $10 with a $200 floor while any reduction applies (IRS Pub 590-A). The Roth catch-up wage test applies to prior-year FICA wages above the threshold.",
+  "years": {
+    "2026": {
+      "k401_deferral": 24500,
+      "k401_catch_up_50": 8000,
+      "k401_super_catch_up_60_63": 11250,
+      "ira": 7500,
+      "ira_catch_up_50": 1100,
+      "simple": 17000,
+      "simple_catch_up_50": 4000,
+      "simple_super_catch_up_60_63": 5250,
+      "section_415c": 72000,
+      "compensation_limit_401a17": 360000,
+      "roth_catch_up_wage_threshold": 150000,
+      "highly_compensated": 160000,
+      "roth_ira_phase_out": {"SINGLE": [153000, 168000], "MFJ": [242000, 252000]},
+      "ira_deduction_phase_out": {
+        "SINGLE_COVERED": [81000, 91000],
+        "MFJ_COVERED": [129000, 149000],
+        "MFJ_SPOUSE_COVERED": [242000, 252000]
+      }
+    }
+  }
+}

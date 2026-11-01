@@ -1,0 +1,23 @@
+{
+  "year": 2026,
+  "retrieved_on": "2026-10-31",
+  "sources": {
+    "bend_points": "https://www.ssa.gov/oact/COLA/piaformula.html",
+    "wage_base": "https://www.ssa.gov/oact/cola/cbb.html",
+    "earnings_test": "https://www.ssa.gov/oact/cola/autoAdj.html",
+    "claiming_rules": "https://www.ssa.gov/benefits/retirement/planner/agereduction.html"
+  },
+  "pia_factors": [0.9, 0.32, 0.15],
+  "bend_points": [1286, 7749],
+  "contribution_and_benefit_base": 184500,
+  "earnings_test": {"under_fra_exempt": 24480, "fra_year_exempt": 65160, "under_fra_withheld_per_dollar": 0.5, "fra_year_withheld_per_dollar": 0.3333333333},
+  "full_retirement_age_months": {
+    "1937": 780, "1938": 782, "1939": 784, "1940": 786, "1941": 788, "1942": 790,
+    "1943": 792, "1954": 792, "1955": 794, "1956": 796, "1957": 798, "1958": 800, "1959": 802, "1960": 804
+  },
+  "early_reduction_per_month": {"first_36": 0.005555555555555556, "beyond": 0.004166666666666667},
+  "delayed_credit_per_month": 0.006666666666666667,
+  "spousal": {"share_of_worker_pia": 0.5, "reduction_first_36": 0.006944444444444444, "reduction_beyond": 0.004166666666666667},
+  "survivor": {"earliest_age": 60, "floor_at_earliest_age": 0.715, "early_claim_worker_floor": 0.825},
+  "notes": "Statutory claiming factors (42 USC 402) are from the SSA age-reduction page; dollar figures are the 2026 values SSA publishes. 1943-1954 births all have FRA 66. Refresh the dollar figures each October."
+}

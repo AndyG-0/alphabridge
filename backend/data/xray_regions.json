@@ -1,0 +1,8 @@
+{
+  "source_url": "https://www.msci.com/our-solutions/indexes/emerging-markets",
+  "retrieved_on": "2026-10-31",
+  "notes": "Country-to-region map for Portfolio X-Ray. Emerging list follows the MSCI Emerging Markets Index country membership (approximate; MSCI revises it, e.g. Greece/Korea reclassification debates) using yfinance's country names. Market-cap breakpoints (USD) are a common convention (large >= 10B, mid 2-10B, small < 2B), not an official standard; Morningstar/MSCI use percentile-based cutoffs.",
+  "home_country": "United States",
+  "emerging_countries": ["Brazil", "Chile", "China", "Colombia", "Czech Republic", "Egypt", "Greece", "Hungary", "India", "Indonesia", "Kuwait", "Malaysia", "Mexico", "Peru", "Philippines", "Poland", "Qatar", "Saudi Arabia", "South Africa", "South Korea", "Taiwan", "Thailand", "Turkey", "United Arab Emirates", "Hong Kong"],
+  "market_cap_breakpoints": {"large_min": 10000000000, "mid_min": 2000000000}
+}

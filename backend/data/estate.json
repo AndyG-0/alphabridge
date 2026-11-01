@@ -1,0 +1,15 @@
+{
+  "source_url": "https://www.irs.gov/businesses/small-businesses-self-employed/whats-new-estate-and-gift-tax",
+  "retrieved_on": "2026-10-31",
+  "verified": false,
+  "notes": "2026 federal basic exclusion $15,000,000 per decedent (IRC 2010(c)(3) as amended by the One Big Beautiful Bill Act; Rev. Proc. 2025-32) and 40% top rate. Figures were confirmed from secondary sources citing those documents, not read on irs.gov directly. Portability lets a surviving spouse add the unused exclusion if an estate return is filed. State estate/inheritance taxes are not modeled. Survivor spending ratio, final-expense and income-replacement defaults are planning assumptions, not sourced.",
+  "basic_exclusion": 15000000,
+  "top_rate": 0.40,
+  "annual_gift_exclusion": 19000,
+  "watch_fraction": 0.75,
+  "survivor_spend_ratio": 0.75,
+  "final_expenses": 15000,
+  "income_replacement_years": 10,
+  "income_replacement_pct": 0.7,
+  "disability_replacement_pct": 0.6
+}

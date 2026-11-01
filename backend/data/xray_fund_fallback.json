@@ -1,0 +1,21 @@
+{
+  "source_url": "https://investor.vanguard.com/investment-products/etfs",
+  "retrieved_on": "2026-10-31",
+  "verified": false,
+  "notes": "Approximate look-through used ONLY for dimensions live data (yfinance funds_data) does not supply: region, market-cap tier and asset mix. Figures are rounded from issuer fact sheets and drift over time; verify before relying on them. Sector and top-holding data come from live fetches only.",
+  "funds": {
+    "VTI": {"regions": {"US": 1.0}, "market_cap": {"Large": 0.73, "Mid": 0.17, "Small": 0.10}, "asset_mix": {"Stocks": 1.0}},
+    "ITOT": {"regions": {"US": 1.0}, "market_cap": {"Large": 0.73, "Mid": 0.17, "Small": 0.10}, "asset_mix": {"Stocks": 1.0}},
+    "VOO": {"regions": {"US": 1.0}, "market_cap": {"Large": 0.98, "Mid": 0.02}, "asset_mix": {"Stocks": 1.0}},
+    "IVV": {"regions": {"US": 1.0}, "market_cap": {"Large": 0.98, "Mid": 0.02}, "asset_mix": {"Stocks": 1.0}},
+    "SPY": {"regions": {"US": 1.0}, "market_cap": {"Large": 0.98, "Mid": 0.02}, "asset_mix": {"Stocks": 1.0}},
+    "QQQ": {"regions": {"US": 1.0}, "market_cap": {"Large": 0.97, "Mid": 0.03}, "asset_mix": {"Stocks": 1.0}},
+    "VGT": {"regions": {"US": 1.0}, "market_cap": {"Large": 0.90, "Mid": 0.10}, "asset_mix": {"Stocks": 1.0}},
+    "VXUS": {"regions": {"Developed ex-US": 0.73, "Emerging": 0.27}, "market_cap": {"Large": 0.78, "Mid": 0.17, "Small": 0.05}, "asset_mix": {"Stocks": 1.0}},
+    "VEA": {"regions": {"Developed ex-US": 1.0}, "market_cap": {"Large": 0.78, "Mid": 0.17, "Small": 0.05}, "asset_mix": {"Stocks": 1.0}},
+    "VWO": {"regions": {"Emerging": 1.0}, "market_cap": {"Large": 0.75, "Mid": 0.20, "Small": 0.05}, "asset_mix": {"Stocks": 1.0}},
+    "VT": {"regions": {"US": 0.62, "Developed ex-US": 0.28, "Emerging": 0.10}, "market_cap": {"Large": 0.75, "Mid": 0.17, "Small": 0.08}, "asset_mix": {"Stocks": 1.0}},
+    "BND": {"regions": {"US": 1.0}, "asset_mix": {"Bonds": 1.0}},
+    "AGG": {"regions": {"US": 1.0}, "asset_mix": {"Bonds": 1.0}}
+  }
+}

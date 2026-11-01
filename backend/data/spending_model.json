@@ -1,0 +1,27 @@
+{
+  "source_url": "https://www.ssrn.com/abstract=2436120",
+  "retrieved_on": "2026-10-31",
+  "verified": false,
+  "notes": "ILLUSTRATIVE DEFAULTS, not verified figures. The shape (real discretionary spending drifting down through retirement, health costs rising late) follows Blanchett (2014) 'Estimating the True Cost of Retirement'; the multipliers below were chosen by the project, not read from that paper. Category shares are a typical-household guess and sum to 1 excluding health care, which the health model prices separately with its own inflation. Edit them in the profile's spending model. Event template amounts are placeholders in today's dollars: replace them with your own quotes.",
+  "categories": {
+    "housing": 0.32,
+    "food": 0.14,
+    "transport": 0.12,
+    "education": 0.04,
+    "discretionary": 0.28,
+    "other": 0.10
+  },
+  "default_real_inflation": {"housing": 0.0, "food": 0.0, "transport": 0.0, "education": 0.0, "discretionary": 0.0, "other": 0.0},
+  "smile_phases": [
+    {"name": "go-go", "from_age": 0, "multiplier": 1.0},
+    {"name": "slow-go", "from_age": 75, "multiplier": 0.92},
+    {"name": "no-go", "from_age": 85, "multiplier": 0.85}
+  ],
+  "event_templates": {
+    "college": {"name": "College (per year)", "kind": "PURCHASE", "amount": 30000, "repeat_every_years": 1, "years": 4},
+    "wedding": {"name": "Wedding", "kind": "PURCHASE", "amount": 35000},
+    "home_purchase": {"name": "Home purchase", "kind": "PURCHASE", "amount": 400000, "financed": true, "down_payment": 80000, "loan_apr": 0.065, "loan_term_months": 360},
+    "car": {"name": "Car replacement", "kind": "PURCHASE", "amount": 40000, "repeat_every_years": 8},
+    "downsizing": {"name": "Downsize: net sale proceeds", "kind": "INFLOW", "amount": 150000, "is_home_sale": true}
+  }
+}

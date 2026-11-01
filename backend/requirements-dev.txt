@@ -1,0 +1,15 @@
+-r requirements.txt
+pytest
+pytest-cov
+pytest-xdist
+hypothesis
+freezegun
+responses
+ruff
+mypy
+bandit
+pip-audit
+vulture
+types-requests
+pre-commit
+psycopg[binary]>=3.2  # Postgres driver for the DATABASE_URL-swap tests

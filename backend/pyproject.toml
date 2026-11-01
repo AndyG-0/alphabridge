@@ -1,0 +1,50 @@
+[project]
+name = "alphabridge-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 160
+target-version = "py312"
+exclude = [".venv", "alembic"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "SIM", "C4", "PT", "RET", "RUF", "DTZ", "PERF", "N"]
+ignore = ["E731", "B008", "RET504", "SIM108", "RUF001", "RUF002", "RUF003", "PT018", "C408", "DTZ011", "S110", "S112", "N812", "N818", "UP047", "S603", "DTZ007", "B023"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["N802", "S101", "S105", "S106", "S311", "DTZ", "PT011"]
+"tests/fixtures.py" = ["E501"]  # CSV rows mirror real export lines
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"
+filterwarnings = ["error::pytest.PytestUnraisableExceptionWarning"]
+
+[tool.coverage.run]
+source = ["."]
+omit = ["tests/*", ".venv/*", "alembic/*", "seed.py", "wsgi.py"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85  # ratchet toward 85 (95 for pure-math modules)
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+explicit_package_bases = true
+mypy_path = "."
+check_untyped_defs = true
+warn_unused_ignores = true
+exclude = ["\\.venv", "alembic", "tests"]
+
+# Ratchet: these modules still have pre-existing type errors. Remove entries as they are fixed.
+[[tool.mypy.overrides]]
+module = ["db", "seed", "routes.planner_routes", "routes.portfolio_routes", "services.quant_engine", "services.household", "services.llm_router", "services.planner", "services.market_data", "services.research_pipeline"]
+ignore_errors = true
+
+[tool.bandit]
+exclude_dirs = [".venv", "tests", "alembic"]

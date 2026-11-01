@@ -1,0 +1,276 @@
+{
+  "source_url": "https://www.kff.org/medicaid/issue-brief/status-of-state-medicaid-expansion-decisions-interactive-map/",
+  "retrieved_on": "2026-10-31",
+  "rules_year": 2026,
+  "notes": "medicaid_expansion: state covers adults to adult_limit_fpl of the federal poverty line (income test only, no asset test). Non-expansion: childless adults generally ineligible; below 100% FPL there is no marketplace credit (coverage gap). WI covers adults to 100% FPL without the ACA expansion and is treated as non-expansion.",
+  "community_engagement": {
+    "source_url": "https://www.medicaid.gov/federal-policy-guidance/downloads/cib12082025.pdf",
+    "start_year": 2027,
+    "hours_per_month": 80,
+    "min_age": 19,
+    "max_age_exclusive": 65,
+    "summary": "Expansion adults 19-64 must show 80 hrs/month of work, community service, a work program or half-time school (or monthly income of at least 80 x federal minimum wage) to stay on Medicaid. Those who fail and would otherwise qualify are also barred from marketplace premium tax credits. States may get a good-faith delay to no later than 2028-12-31."
+  },
+  "default": {
+    "medicaid_expansion": true,
+    "adult_limit_fpl": 1.38,
+    "agency": "Medicaid"
+  },
+  "states": {
+    "AL": {
+      "medicaid_expansion": false,
+      "adult_limit_fpl": null,
+      "agency": "Medicaid"
+    },
+    "AK": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "AZ": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "AHCCCS"
+    },
+    "AR": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "CA": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "CO": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "CT": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "DE": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "DC": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "FL": {
+      "medicaid_expansion": false,
+      "adult_limit_fpl": null,
+      "agency": "Medicaid"
+    },
+    "GA": {
+      "medicaid_expansion": false,
+      "adult_limit_fpl": null,
+      "agency": "Medicaid"
+    },
+    "HI": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "ID": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "IL": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "IN": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "IA": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "KS": {
+      "medicaid_expansion": false,
+      "adult_limit_fpl": null,
+      "agency": "Medicaid"
+    },
+    "KY": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "LA": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "ME": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "MD": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "MA": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "MI": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "MN": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "MS": {
+      "medicaid_expansion": false,
+      "adult_limit_fpl": null,
+      "agency": "Medicaid"
+    },
+    "MO": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "MT": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "NE": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "NV": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "NH": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "NJ": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "NM": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "NY": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "NC": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "ND": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "OH": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "OK": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "OR": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "PA": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "RI": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "SC": {
+      "medicaid_expansion": false,
+      "adult_limit_fpl": null,
+      "agency": "Medicaid"
+    },
+    "SD": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "TN": {
+      "medicaid_expansion": false,
+      "adult_limit_fpl": null,
+      "agency": "Medicaid"
+    },
+    "TX": {
+      "medicaid_expansion": false,
+      "adult_limit_fpl": null,
+      "agency": "Medicaid"
+    },
+    "UT": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "VT": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "VA": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "WA": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "WV": {
+      "medicaid_expansion": true,
+      "adult_limit_fpl": 1.38,
+      "agency": "Medicaid"
+    },
+    "WI": {
+      "medicaid_expansion": false,
+      "adult_limit_fpl": null,
+      "agency": "Medicaid"
+    },
+    "WY": {
+      "medicaid_expansion": false,
+      "adult_limit_fpl": null,
+      "agency": "Medicaid"
+    }
+  }
+}

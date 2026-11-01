@@ -1,0 +1,9 @@
+{
+  "source_url": "https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-and-deductibles",
+  "retrieved_on": "2026-10-31",
+  "verified": false,
+  "notes": "Part B base premium and IRMAA tiers live in data/tax_tables (CMS 2026 fact sheet). part_d_base_monthly (38.99, CMS national base beneficiary premium) was read from secondary web sources, not the CMS release, and is used as a stand-in for the plan premium; the real premium depends on the plan. medigap_monthly_per_person is an illustrative national-average-style Plan G figure, NOT sourced. LTC probability (about 70% of people turning 65 need some long-term care) and average duration (women 3.7 yrs, men 2.2 yrs) are from HHS/ACL https://acl.gov/ltc/basic-needs/how-much-care-will-you-need; the annual cost is the user's own assumption. IRMAA is set by MAGI from two years earlier; the engine uses the current-year estimate.",
+  "part_d_base_monthly": 38.99,
+  "medigap_monthly_per_person": 150,
+  "ltc": {"probability": 0.7, "avg_years_women": 3.7, "avg_years_men": 2.2}
+}

@@ -1,0 +1,8 @@
+{
+  "source_url": "https://www.irs.gov/taxtopics/tc701",
+  "retrieved_on": "2026-10-31",
+  "notes": "IRC section 121 home-sale gain exclusion: $250,000 single, $500,000 married filing jointly (statutory, not inflation-indexed), if owned and lived in as a main home 2 of the last 5 years. Selling-cost and appreciation defaults are project assumptions, not sourced; the user edits them.",
+  "exclusion": {"SINGLE": 250000, "MFJ": 500000, "MFS": 250000, "HOH": 250000},
+  "default_appreciation": 0.03,
+  "default_selling_cost_pct": 0.06
+}

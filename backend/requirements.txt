@@ -1,0 +1,21 @@
+flask>=3.0
+flask-cors
+pydantic>=2.7
+sqlalchemy>=2.0
+alembic
+gunicorn
+apscheduler>=3.10,<4
+cryptography
+litellm
+edgartools
+yfinance
+fredapi
+pandas
+numpy
+scipy
+pdfplumber
+python-multipart
+requests
+mcp
+pillow
+filelock>=4.2.1  # transitive (huggingface/litellm); pinned for CVE fixes

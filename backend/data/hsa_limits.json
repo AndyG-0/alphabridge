@@ -1,0 +1,11 @@
+{
+  "source_url": "https://www.irs.gov/pub/irs-drop/rp-25-19.pdf",
+  "retrieved_on": "2026-10-31",
+  "notes": "Rev. Proc. 2025-19 sec. 3.01 (2026 limits). 2025 figures are from Rev. Proc. 2024-25. The age-55 catch-up is fixed by statute (IRC 223(b)(3)) and not indexed. HSA contributions require HDHP coverage and no general-purpose health FSA; a limited-purpose (dental/vision) FSA is compatible. FSAs are not modeled as accounts: they are use-it-or-lose-it spending allowances, not investable.",
+  "catch_up_age": 55,
+  "catch_up": 1000,
+  "years": {
+    "2025": {"self_only": 4300, "family": 8550},
+    "2026": {"self_only": 4400, "family": 8750}
+  }
+}

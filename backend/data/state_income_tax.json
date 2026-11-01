@@ -1,0 +1,19 @@
+{
+  "source_url": "https://taxfoundation.org/data/all/state/state-income-tax-rates-2026/",
+  "retrieved_on": "2026-10-31",
+  "notes": "Only states whose treatment is simple and verified are listed; every other state falls back to `default_flat_rate` (a planning placeholder, flagged known=false) until its brackets are added. Wages/retirement-income exclusions are not modeled. Confirm each flat rate against the state revenue department before relying on it.",
+  "default_flat_rate": 0.04,
+  "default_taxes_social_security": false,
+  "states": {
+    "AK": {"flat_rate": 0.0, "taxes_social_security": false, "source_url": "https://tax.alaska.gov/"},
+    "AZ": {"flat_rate": 0.025, "taxes_social_security": false, "source_url": "https://azdor.gov/"},
+    "FL": {"flat_rate": 0.0, "taxes_social_security": false, "source_url": "https://floridarevenue.com/"},
+    "NV": {"flat_rate": 0.0, "taxes_social_security": false, "source_url": "https://tax.nv.gov/"},
+    "NH": {"flat_rate": 0.0, "taxes_social_security": false, "source_url": "https://www.revenue.nh.gov/"},
+    "SD": {"flat_rate": 0.0, "taxes_social_security": false, "source_url": "https://dor.sd.gov/"},
+    "TN": {"flat_rate": 0.0, "taxes_social_security": false, "source_url": "https://www.tn.gov/revenue.html"},
+    "TX": {"flat_rate": 0.0, "taxes_social_security": false, "source_url": "https://comptroller.texas.gov/"},
+    "WA": {"flat_rate": 0.0, "taxes_social_security": false, "source_url": "https://dor.wa.gov/", "note": "No wage income tax; a separate capital-gains excise tax is not modeled."},
+    "WY": {"flat_rate": 0.0, "taxes_social_security": false, "source_url": "https://revenue.wyo.gov/"}
+  }
+}
