@@ -8,7 +8,7 @@ from models import Holding
 from services import simplefin
 
 CLAIM = "https://bridge.example/simplefin/claim/TOK"
-ACCESS = "https://user:pw@bridge.example/simplefin"
+ACCESS = "https://user:s3cret-pw-Zq9@bridge.example/simplefin"
 
 
 @pytest.fixture(autouse=True)
@@ -55,7 +55,7 @@ def test_access_url_stored_encrypted(client):
         from models import SimpleFinConfig
 
         raw = db.session().query(SimpleFinConfig).one().access_url_encrypted
-        assert "pw" not in raw and raw
+        assert "s3cret-pw-Zq9" not in raw and raw
 
 
 @responses.activate
