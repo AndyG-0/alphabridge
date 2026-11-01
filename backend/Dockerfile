@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.15-slim
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 # OCR for scanned statements (optional: the LLM vision fallback works without it)
