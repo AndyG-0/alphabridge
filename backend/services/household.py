@@ -11,9 +11,11 @@ from datetime import date
 import numpy as np
 
 from services import aca, healthcare, income_streams, state_rules
+from services import coverage as coverage_svc
 from services import liabilities as liab_svc
 from services import social_security as ss_svc
 from services import spending as spending_svc
+from services import spending_goals as goals_svc
 from services import tax as tax_svc
 
 MEDICARE_AGE = 65
@@ -125,6 +127,8 @@ def build_flows(
     real_return_taxable: float = 0.04,
     gain_ratio: float = 0.3,
     today: date | None = None,
+    coverage_options: list | None = None,
+    spending_goals: list | None = None,
 ) -> Flows:
     """Year-by-year household cash flows for one candidate retirement age."""
     today = today or date.today()
@@ -237,7 +241,11 @@ def build_flows(
     if not spending_svc.is_default(smodel):
         for y in range(retire_y, years):
             spend_adj[y] = base_spend * (spending_svc.multiplier(smodel, me.age_in(y), y) - 1.0)
+    goal_extra = goals_svc.yearly_extra(spending_goals or [], {p.key: p.age_now for p in ppl}, retire_y, years, smodel)
+    spend_adj = spend_adj + goal_extra  # goals are extra to the base budget, today's $, grossed up for tax like the rest of spending
     prev_premium = 0.0
+    cov_choice = getattr(profile, "coverage_choice", None) or {}
+    cov_opts = {o.id: o for o in (coverage_options or [])}
     for y in range(years):
         working = y < retire_y or (sp is not None and y < sp_retire_y)
         if y < retire_y:
@@ -255,7 +263,26 @@ def build_flows(
             row.update(coverage="EMPLOYER", total=0.0)
         else:
             override = getattr(profile, "aca_benchmark_premium_monthly", 0) or 0
-            bench = (override * 12 * len(under) / len(ppl)) if override else aca.benchmark_annual([p.age_in(y) for p in under])
+            # a person with an eligible chosen plan leaves ACA / flat Medicare; an ineligible choice falls back with a note
+            chosen: dict[str, object] = {}
+            notes: list[str] = []
+            for p in ppl:
+                opt = cov_opts.get(cov_choice.get(p.key) or 0)
+                if opt is None:
+                    continue
+                age = p.age_in(y)
+                right_stage = (opt.category in coverage_svc.MEDICARE_CATEGORIES) == (age >= MEDICARE_AGE)
+                if opt.category != "DRUG" and right_stage and coverage_svc.eligible(opt, age, p.key):
+                    chosen[p.key] = opt
+                else:
+                    notes.append(f"{opt.name} not available to {p.name} at {age:.0f}; priced as {'Medicare' if age >= MEDICARE_AGE else 'ACA'}")
+            plan_cost_by_key: dict[str, float] = {}
+            for k, opt in chosen.items():
+                n = sum(1 for o in chosen.values() if o.id == opt.id)
+                plan_cost_by_key[k] = coverage_svc.annual_cost(opt, this_year + y, n, cov_opts.get(opt.drug_option_id or 0))
+            aca_under = [p for p in under if p.key not in chosen]
+            plan_cost = sum(plan_cost_by_key[p.key] for p in under if p.key in chosen)
+            bench = (override * 12 * len(aca_under) / len(ppl)) if override else (aca.benchmark_annual([p.age_in(y) for p in aca_under]) if aca_under else 0.0)
             magi = 0.0
             for _ in range(3):  # premium depends on MAGI, which depends on the withdrawal that pays the premium
                 gross = (base_spend + spend_adj[y] + other + prev_premium) / max(1 - tax, 0.05)
@@ -272,7 +299,7 @@ def build_flows(
                         medicaid_limit=medicaid_limit,
                         medicaid_blocked=this_year + y >= ce["start_year"] and not meets_ce,
                     )
-                    if under
+                    if aca_under
                     else {
                         "net": 0.0,
                         "benchmark": 0.0,
@@ -284,16 +311,26 @@ def build_flows(
                         "engagement_blocked": False,
                     }
                 )
-                prev_premium = res["net"]
+                prev_premium = res["net"] + plan_cost
             dental = profile.dental_vision_monthly * 12 * len(ppl)
             oop = profile.health_oop_annual * len(under)
-            medicare = profile.medicare_monthly_per_person * 12 * len(over)
-            medicare += healthcare.irmaa_surcharge_monthly(magi, getattr(profile, "tax_filing_status", "SINGLE"), this_year + y) * 12 * len(over)
+            status = getattr(profile, "tax_filing_status", "SINGLE")
+            medicare = 0.0
+            for p in over:
+                if p.key in chosen:  # Medicare Advantage / Medigap: plan premium (with its drug add-on) + Part B if required + Part D IRMAA
+                    i = tax_svc.irmaa(magi, status, this_year + y)
+                    medicare += 12 * ((i["part_b_total_monthly"] if chosen[p.key].requires_part_b_premium else 0.0) + i["part_d_surcharge_monthly"])
+                    medicare += plan_cost_by_key[p.key]
+                else:
+                    medicare += profile.medicare_monthly_per_person * 12 + healthcare.irmaa_surcharge_monthly(magi, status, this_year + y) * 12
             adj = health_adj(y)
-            total = (res["net"] + dental + oop + medicare) * adj
+            total = (res["net"] + plan_cost + dental + oop + medicare) * adj
             cliff = aca.cliff_magi(len(ppl)) if under else None
             row.update(
                 coverage="ACA" if under and not over else "MEDICARE" if not under else "ACA+MEDICARE",
+                coverage_plans=[chosen[p.key].name for p in ppl if p.key in chosen],
+                coverage_note="; ".join(notes),
+                plan_cost=plan_cost * adj,
                 aca_benchmark=res["benchmark"] * adj,
                 aca_credit=res["credit"] * adj,
                 aca_net=res["net"] * adj,
@@ -332,7 +369,8 @@ def build_flows(
         health=health,
         breakdown={
             "health": health_v,
-            "spending_adjustment": spend_adj,
+            "spending_adjustment": spend_adj - goal_extra,
+            "spending_goals": goal_extra,
             "purchases": purchases,
             "home_upkeep": upkeep,
             "escrow": escrow_v,

@@ -63,6 +63,7 @@ class UserProfile(Base):
     employer_match_rate: Mapped[float] = mapped_column(Float, default=0)  # employer 401(k) match per $1 deferred (0.5 = 50 cents)
     employer_match_cap_pct: Mapped[float] = mapped_column(Float, default=0)  # match applies to deferrals up to this share of pay (0.06 = 6%)
     onboarding: Mapped[dict] = mapped_column(JSON, default=dict)  # services/onboarding.py wizard state: {step, skipped, completed, dismissed}
+    coverage_choice: Mapped[dict] = mapped_column(JSON, default=dict)  # {SELF|SPOUSE: coverage_option.id}; missing = ACA before 65, flat Medicare after
     accounts = relationship("Account", back_populates="user", cascade="all, delete-orphan")
 
     @property
@@ -310,6 +311,64 @@ class Pension(Base):
         return d
 
 
+class CoverageOption(Base):
+    """A user-defined health-coverage alternative to ACA / flat Medicare (employer retiree plan, Medicare Advantage, a Medigap or drug add-on).
+    Prices are in that year's dollars, keyed by year in `premium_by_year`. Costs and eligibility feed services/coverage.py."""
+
+    __tablename__ = "coverage_option"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=current_user_id)
+    name: Mapped[str] = mapped_column(String(160))
+    carrier: Mapped[str] = mapped_column(String(120), default="")
+    plan_code: Mapped[str] = mapped_column(String(60), default="")
+    category: Mapped[str] = mapped_column(String(24), default="PRE_MEDICARE")  # PRE_MEDICARE | MEDICARE_ADVANTAGE | MEDIGAP | DRUG | OTHER
+    premium_by_year: Mapped[dict] = mapped_column(JSON, default=dict)  # {"2027": 125.54}; exact year, else latest earlier, else earliest
+    premium_period: Mapped[str] = mapped_column(String(8), default="MONTHLY")  # MONTHLY | ANNUAL
+    premium_basis: Mapped[str] = mapped_column(String(14), default="PER_PERSON")  # PER_PERSON | PER_HOUSEHOLD (split across enrollees)
+    deductible: Mapped[float] = mapped_column(Float, default=0)
+    oop_max: Mapped[float] = mapped_column(Float, default=0)  # annual out-of-pocket maximum per person; 0 = unknown
+    eligibility_min_age: Mapped[float] = mapped_column(Float, default=0)
+    eligibility_max_age: Mapped[float | None] = mapped_column(Float, nullable=True)  # exclusive; None = no upper bound
+    requires_medicare_parts: Mapped[str] = mapped_column(String(10), default="")  # e.g. "A,B"
+    requires_part_b_premium: Mapped[bool] = mapped_column(Boolean, default=False)  # Part B premium is paid on top of this plan
+    includes_drugs: Mapped[bool] = mapped_column(Boolean, default=False)
+    drug_option_id: Mapped[int | None] = mapped_column(ForeignKey("coverage_option.id", ondelete="SET NULL"), nullable=True)  # linked DRUG add-on
+    owner: Mapped[str] = mapped_column(String(10), default="BOTH")  # SELF | SPOUSE | BOTH
+    cost_sharing_note: Mapped[str] = mapped_column(Text, default="")
+    source_note: Mapped[str] = mapped_column(Text, default="")
+    verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    def to_dict(self) -> dict:
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+
+class SpendingGoal(Base):
+    """A recurring retirement cost on top of the base budget (travel, hobbies, family, home projects). Amounts are today's dollars a year;
+    the window is in the owner's age or in years after the primary's retirement. Feeds services/spending_goals.py."""
+
+    __tablename__ = "spending_goal"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=current_user_id)
+    name: Mapped[str] = mapped_column(String(120))
+    category: Mapped[str] = mapped_column(String(40), default="other")  # preset key (travel, hobbies, family, home) or free text
+    annual_amount: Mapped[float] = mapped_column(Float, default=0)
+    start_basis: Mapped[str] = mapped_column(String(24), default="YEARS_AFTER_RETIREMENT")  # AGE | YEARS_AFTER_RETIREMENT
+    start_value: Mapped[float] = mapped_column(Float, default=0)
+    end_basis: Mapped[str] = mapped_column(String(24), default="YEARS_AFTER_RETIREMENT")
+    end_value: Mapped[float | None] = mapped_column(Float, nullable=True)  # None = through the end of the plan
+    owner: Mapped[str] = mapped_column(String(10), default="SELF")  # SELF | SPOUSE | JOINT (JOINT follows the primary)
+    real_inflation: Mapped[float] = mapped_column(Float, default=0.0)  # per year above general inflation
+    smile_applies: Mapped[bool] = mapped_column(Boolean, default=True)  # scale by the go-go/slow-go/no-go multiplier
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    def to_dict(self) -> dict:
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+
 class ChatSession(Base):
     """A saved Ask-AI conversation. The server owns history so sessions can be resumed from any device."""
 
@@ -482,7 +541,7 @@ class ActionItem(Base):
 
 
 # Tenant scoping (see db._scope_to_user). A test fails when a table is in none of these groups, so new models must be classified.
-USER_SCOPED = (Account, Scenario, Liability, PlannedEvent, Pension, ChatSession, ActionItem)
+USER_SCOPED = (Account, Scenario, Liability, PlannedEvent, Pension, ChatSession, ActionItem, CoverageOption, SpendingGoal)
 ACCOUNT_CHILDREN = (Holding, TaxLot, AllowedPlanMenu)
 SHARED_TABLES = {
     "user_profile",  # the tenants themselves: reached through routes._helpers.get_profile()

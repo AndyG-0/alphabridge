@@ -94,6 +94,8 @@ def create_app(overrides: dict | None = None) -> Flask:
         "chat_routes",
         "liability_routes",
         "pension_routes",
+        "coverage_routes",
+        "spending_goals_routes",
         "early_access_routes",
         "tax_routes",
         "rmd_routes",

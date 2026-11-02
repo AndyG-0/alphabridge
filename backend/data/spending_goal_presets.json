@@ -1,0 +1,12 @@
+{
+  "source_url": "https://www.ssrn.com/abstract=2436120",
+  "retrieved_on": "2026-11-01",
+  "verified": false,
+  "notes": "ILLUSTRATIVE STARTING POINTS, not verified figures. Amounts are today's dollars a year; replace them with your own quotes. Travel and hobbies follow the go-go/slow-go/no-go smile (Blanchett 2014), the others do not.",
+  "presets": {
+    "travel": {"name": "Travel", "category": "travel", "annual_amount": 12000, "start_basis": "YEARS_AFTER_RETIREMENT", "start_value": 0, "end_basis": "YEARS_AFTER_RETIREMENT", "end_value": 15, "smile_applies": true},
+    "hobbies": {"name": "Hobbies & recreation", "category": "hobbies", "annual_amount": 6000, "start_basis": "YEARS_AFTER_RETIREMENT", "start_value": 0, "end_basis": "YEARS_AFTER_RETIREMENT", "end_value": null, "smile_applies": true},
+    "family": {"name": "Family & gifts", "category": "family", "annual_amount": 5000, "start_basis": "YEARS_AFTER_RETIREMENT", "start_value": 0, "end_basis": "YEARS_AFTER_RETIREMENT", "end_value": null, "smile_applies": false},
+    "home": {"name": "Home projects & vehicles", "category": "home", "annual_amount": 8000, "start_basis": "YEARS_AFTER_RETIREMENT", "start_value": 0, "end_basis": "YEARS_AFTER_RETIREMENT", "end_value": null, "smile_applies": false}
+  }
+}

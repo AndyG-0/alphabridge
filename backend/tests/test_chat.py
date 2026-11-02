@@ -183,6 +183,9 @@ def test_every_read_route_family_has_a_chat_tool(client):
         "/api/rmd/inherited",
         "/api/liabilities",
         "/api/pensions",
+        "/api/coverage-options",
+        "/api/spending-goals",
+        "/api/spending-goals/impact",
         "/api/early-access",
         "/api/early-access/sepp",
         "/api/tax/estimate",
@@ -207,6 +210,7 @@ def test_every_read_route_family_has_a_chat_tool(client):
     }
     excluded = {
         "/api/institutions",
+        "/api/spending-goals/presets",
         "/api/export/json",
         "/api/export/report.<fmt>",
         "/api/share/<token>/report.<fmt>",

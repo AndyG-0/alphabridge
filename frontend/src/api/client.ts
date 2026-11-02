@@ -241,6 +241,9 @@ export interface HealthYear {
   aca_benchmark: number
   aca_credit: number
   aca_net: number
+  coverage_plans?: string[]
+  coverage_note?: string
+  plan_cost?: number
   medicare: number
   dental_vision: number
   out_of_pocket: number
@@ -614,6 +617,76 @@ export interface Pension {
 }
 export type PensionEdit = Partial<Pick<Pension, 'start_age' | 'payout' | 'interest_credit_rate' | 'pay_credit_pct' | 'covered_pay_annual'>>
 
+export type CoverageCategory = 'PRE_MEDICARE' | 'MEDICARE_ADVANTAGE' | 'MEDIGAP' | 'DRUG' | 'OTHER'
+export interface CoverageOptionInput {
+  name: string
+  carrier: string
+  plan_code: string
+  category: CoverageCategory
+  premium_by_year: Record<string, number>
+  premium_period: 'MONTHLY' | 'ANNUAL'
+  premium_basis: 'PER_PERSON' | 'PER_HOUSEHOLD'
+  deductible: number
+  oop_max: number
+  eligibility_min_age: number
+  eligibility_max_age: number | null
+  requires_medicare_parts: '' | 'A' | 'B' | 'A,B'
+  requires_part_b_premium: boolean
+  includes_drugs: boolean
+  drug_option_id: number | null
+  owner: 'SELF' | 'SPOUSE' | 'BOTH'
+  cost_sharing_note: string
+  source_note: string
+  verified: boolean
+  active: boolean
+  sort_order: number
+}
+export interface CoverageOption extends CoverageOptionInput {
+  id: number
+}
+export type GoalBasis = 'AGE' | 'YEARS_AFTER_RETIREMENT'
+export interface SpendingGoalInput {
+  name: string
+  category: string
+  annual_amount: number
+  start_basis: GoalBasis
+  start_value: number
+  end_basis: GoalBasis
+  end_value: number | null
+  owner: 'SELF' | 'SPOUSE' | 'JOINT'
+  real_inflation: number
+  smile_applies: boolean
+  enabled: boolean
+  note: string
+  sort_order: number
+}
+export interface SpendingGoal extends SpendingGoalInput {
+  id: number
+}
+export interface SpendingGoals {
+  goals: SpendingGoal[]
+  costs: { id: number; name: string; enabled: boolean; lifetime_real: number; lifetime_nominal: number; first_age: number | null; last_age: number | null }[]
+  lifetime_real: number
+  lifetime_nominal: number
+}
+export interface SpendingGoalPresets {
+  presets: Record<string, Omit<SpendingGoalInput, 'owner' | 'real_inflation' | 'enabled' | 'note' | 'sort_order'>>
+  verified: boolean
+  notes: string
+}
+export interface SpendingGoalsImpact {
+  has_goals: boolean
+  success_rate_with?: number
+  success_rate_without?: number
+  success_rate_change?: number
+  target_success_rate?: number
+}
+
+export interface CoverageOptions {
+  options: CoverageOption[]
+  choice: Partial<Record<'SELF' | 'SPOUSE', number>>
+}
+
 export interface RowError {
   line: number
   symbol: string
@@ -965,6 +1038,17 @@ export const api = {
   pensions: () => req<Pension[]>('/pensions'),
   savePension: (id: number, edit: PensionEdit) => req<Pension>(`/pensions/${id}`, json('PUT', edit)),
   deletePension: (id: number) => req<null>(`/pensions/${id}`, json('DELETE')),
+  coverageOptions: () => req<CoverageOptions>('/coverage-options'),
+  addCoverageOption: (o: CoverageOptionInput) => req<CoverageOption>('/coverage-options', json('POST', o)),
+  saveCoverageOption: (id: number, o: CoverageOptionInput) => req<CoverageOption>(`/coverage-options/${id}`, json('PUT', o)),
+  deleteCoverageOption: (id: number) => req<null>(`/coverage-options/${id}`, json('DELETE')),
+  spendingGoals: () => req<SpendingGoals>('/spending-goals'),
+  spendingGoalPresets: () => req<SpendingGoalPresets>('/spending-goals/presets'),
+  spendingGoalsImpact: () => req<SpendingGoalsImpact>('/spending-goals/impact'),
+  addSpendingGoal: (g: SpendingGoalInput) => req<SpendingGoal>('/spending-goals', json('POST', g)),
+  saveSpendingGoal: (id: number, g: SpendingGoalInput) => req<SpendingGoal>(`/spending-goals/${id}`, json('PUT', g)),
+  deleteSpendingGoal: (id: number) => req<null>(`/spending-goals/${id}`, json('DELETE')),
+  setCoverageChoice: (c: { SELF?: number | null; SPOUSE?: number | null }) => req<{ choice: CoverageOptions['choice'] }>('/coverage-choice', json('PUT', c)),
   schedulerStatus: () => req<SchedulerStatus>('/scheduler/status'),
   liabilities: () => req<Liability[]>('/liabilities'),
   addLiability: (l: LiabilityIn) => req<Liability>('/liabilities', json('POST', l)),
@@ -1170,6 +1254,7 @@ export interface HealthcarePlan {
   ltc: { mode: string; probability: number; annual_cost: number; years: number; total: number }[]
   assumptions: { verified: boolean; source_url: string }
   magi_basis: string
+  coverage_options?: { person: string; age: number; aca_net: number | null; options: { id: number; name: string; annual: number; verified: boolean }[] }[]
 }
 
 export interface RealEstatePlan {
