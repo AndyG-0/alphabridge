@@ -1,3 +1,4 @@
+import { Markdown } from '../components/Markdown'
 import { Fragment, useState } from 'react'
 import type { ReactNode } from 'react'
 import { api, type Report, type WhatIf } from '../api/client'
@@ -46,11 +47,11 @@ function ReportCard({ r, onOpen }: { r: Report; onOpen: (s: string) => void }) {
       <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
         <div>
           <h3 className="font-medium text-emerald-400">Bull case</h3>
-          <p className="whitespace-pre-wrap text-slate-300">{r.bull_case_md}</p>
+          <Markdown className="text-slate-300">{r.bull_case_md}</Markdown>
         </div>
         <div>
           <h3 className="font-medium text-red-400">Bear case</h3>
-          <p className="whitespace-pre-wrap text-slate-300">{r.bear_case_md}</p>
+          <Markdown className="text-slate-300">{r.bear_case_md}</Markdown>
         </div>
       </div>
       <p className="mt-2 text-xs text-amber-300">Portfolio fit: {r.portfolio_fit_notes}</p>

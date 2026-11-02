@@ -2,6 +2,7 @@ import { Check, MessageSquarePlus, Pencil, Send, Trash2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api, type ChatMsg } from '../api/client'
+import { Markdown } from '../components/Markdown'
 import { Button, Card, Err, Input } from '../components/ui'
 import { useAsync } from '../hooks'
 
@@ -228,11 +229,11 @@ export default function Chat() {
               key={m.id}
               className={
                 m.role === 'user'
-                  ? 'ml-8 rounded-2xl bg-emerald-900/40 px-3 py-2 text-sm'
-                  : 'mr-8 whitespace-pre-wrap rounded-2xl bg-slate-900 px-3 py-2 text-sm'
+                  ? 'ml-8 whitespace-pre-wrap rounded-2xl bg-emerald-900/40 px-3 py-2 text-sm'
+                  : 'mr-8 min-w-0 rounded-2xl bg-slate-900 px-3 py-2 text-sm'
               }
             >
-              {m.content}
+              {m.role === 'user' ? m.content : <Markdown>{m.content}</Markdown>}
               {m.tools.length > 0 && <div className="mt-1 text-[11px] text-slate-500">Checked: {m.tools.join(', ')}</div>}
               {m.footer && <div className="mt-1 text-[11px] text-slate-500">{m.footer}</div>}
             </div>
