@@ -140,6 +140,8 @@ Tax and threshold data: `backend/data/tax_tables/<year>.json` with `source_url` 
   - *Acceptance:* every assumption (returns, vol, correlations, inflation, fees, taxes) editable with default and source; fee-drag calculator; plan health score with explanations; diff of results since last run.
   - *Touch:* `backend/services/assumptions.py`, `backend/models.py`, frontend
   - *Depends:* E13
+- [x] **P17 Custom health-coverage options** — user-defined alternatives to ACA / flat Medicare (employer retiree plans, Medicare Advantage, drug add-ons). (Done: `CoverageOption` model + migration, `UserProfile.coverage_choice`, `services/coverage.py` (eligibility by age/owner, price by year, monthly/annual and per-person/household conversion, linked Rx add-on), CRUD + choice routes, `get_coverage_options` chat tool, `build_flows` prices a chosen eligible plan instead of ACA (before 65) or the flat Medicare figure (65+, Part B still added when required) and falls back with a `coverage_note` when ineligible, comparison on the Healthcare card, `CoverageOptionsCard`. Left: a mixed household (one on a plan, one on ACA) keeps the full-household subsidy size and MAGI test; deductible/OOP max/cost sharing are stored but not priced; per-household plans are split evenly; plan prices are user-entered and unverified; the card compares at current age only.)
+  - *Touch:* `backend/services/coverage.py`, `backend/services/household.py`, `backend/routes/coverage_routes.py`, `frontend/src/pages/CoverageOptionsCard.tsx`
 
 ---
 

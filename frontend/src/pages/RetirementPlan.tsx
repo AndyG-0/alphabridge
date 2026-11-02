@@ -7,6 +7,7 @@ import { api } from '../api/client'
 import RmdCard from './RmdCard'
 import SavingsCard from './SavingsCard'
 import SocialSecurityCard from './SocialSecurityCard'
+import CoverageOptionsCard from './CoverageOptionsCard'
 import HealthcareCard from './HealthcareCard'
 import RealEstateCard from './RealEstateCard'
 import ScenarioCard from './ScenarioCard'
@@ -86,6 +87,7 @@ export default function RetirementPlan() {
           <StressCard />
           <SpendingCard />
           <HealthcareCard />
+          <CoverageOptionsCard />
           <RealEstateCard />
           <ScenarioCard />
           <SurvivorCard />
@@ -651,8 +653,8 @@ function Health({ f, spouse }: { f: Fire; spouse?: string }) {
     <Card title="Health care in retirement (per year, today's $)">
       <p className="mb-2 flex items-start gap-1.5 text-sm text-slate-400">
         <span>
-          Before 65 you'd buy a marketplace (ACA) plan. The tax credit depends on your taxable income that year, which in early retirement is mostly what you
-          pull from 401(k)s plus gains on shares you sell.
+          Before 65 this assumes a marketplace (ACA) plan unless you pick one of your own coverage options below. The tax credit depends on your taxable income
+          that year, which in early retirement is mostly what you pull from 401(k)s plus gains on shares you sell.
         </span>
         <Hint>
           Uses 2026 rules. The bigger 2021–2025 subsidies expired, so households above 400% of the poverty line ($84,600 for two) get no credit. Below 138% you
@@ -671,6 +673,7 @@ function Health({ f, spouse }: { f: Fire; spouse?: string }) {
               <th className="p-1">Est. income</th>
               <th className="p-1">ACA plan</th>
               <th className="p-1">Tax credit</th>
+              <th className="p-1">Your plan</th>
               <th className="p-1">Medicare</th>
               <th className="p-1">Dental, vision, out of pocket</th>
               <th className="p-1">Total</th>
@@ -686,6 +689,10 @@ function Health({ f, spouse }: { f: Fire; spouse?: string }) {
                 </td>
                 <td className="p-1 text-left">
                   {h.medicaid ? h.medicaid_agency : COVERAGE[h.coverage]}
+                  {h.coverage_plans && h.coverage_plans.length > 0 && (
+                    <div className="text-xs text-slate-400">{[...new Set(h.coverage_plans)].join(' + ')}</div>
+                  )}
+                  {h.coverage_note && <div className="text-xs text-amber-300">{h.coverage_note}</div>}
                   {h.medicaid && (
                     <>
                       {' '}
@@ -720,6 +727,7 @@ function Health({ f, spouse }: { f: Fire; spouse?: string }) {
                 <td className="p-1">{h.coverage === 'MEDICARE' ? '—' : usd(h.magi_est)}</td>
                 <td className="p-1">{h.aca_benchmark ? usd(h.aca_benchmark) : '—'}</td>
                 <td className="p-1 text-emerald-300">{h.aca_credit ? `−${usd(h.aca_credit)}` : '—'}</td>
+                <td className="p-1">{h.plan_cost ? usd(h.plan_cost) : '—'}</td>
                 <td className="p-1">{h.medicare ? usd(h.medicare) : '—'}</td>
                 <td className="p-1">{usd(h.dental_vision + h.out_of_pocket)}</td>
                 <td className="p-1 font-medium">{usd(h.total)}</td>

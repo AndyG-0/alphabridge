@@ -44,6 +44,19 @@ export default function HealthcareCard() {
           ))}
         </tbody>
       </table>
+      {d.coverage_options?.some((c) => c.options.length > 0) && (
+        <div className="mt-2 text-sm">
+          <div className="text-slate-400">Your coverage options (annual per person, at current age)</div>
+          {d.coverage_options
+            .filter((c) => c.options.length > 0)
+            .map((c) => (
+              <div key={c.person}>
+                {c.person === 'SELF' ? 'You' : 'Spouse'} ({c.age}):{c.aca_net != null ? ` ACA ${usd(c.aca_net)} · ` : ' '}
+                {c.options.map((o) => `${o.name} ${usd(o.annual)}`).join(' · ')}
+              </div>
+            ))}
+        </div>
+      )}
       <p className="mt-2 text-sm">{d.ltc.map((x) => `${x.mode === 'EXPECTED' ? 'Expected' : 'Stress'} LTC: ${usd(x.total)}`).join(' · ')}</p>
       <p className="mt-1 text-xs text-slate-400">
         {d.magi_basis}. {d.assumptions.verified ? '' : 'Part D and Medigap figures are unverified estimates.'}

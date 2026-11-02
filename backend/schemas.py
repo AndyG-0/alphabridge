@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from services import spending, state_rules
 
@@ -171,6 +171,58 @@ class PensionIn(BaseModel):
     interest_credit_rate: float | None = Field(None, ge=0, le=0.15)
     pay_credit_pct: float | None = Field(None, ge=0, le=0.5)
     covered_pay_annual: float | None = Field(None, ge=0)
+
+
+COVERAGE_CATEGORIES = "^(PRE_MEDICARE|MEDICARE_ADVANTAGE|MEDIGAP|DRUG|OTHER)$"
+
+
+class CoverageOptionIn(BaseModel):
+    """A user-defined coverage alternative; prices are keyed by year, e.g. {"2027": 125.54}."""
+
+    name: str = Field(min_length=1, max_length=160)
+    carrier: str = Field("", max_length=120)
+    plan_code: str = Field("", max_length=60)
+    category: str = Field("PRE_MEDICARE", pattern=COVERAGE_CATEGORIES)
+    premium_by_year: dict[str, float] = {}
+    premium_period: str = Field("MONTHLY", pattern="^(MONTHLY|ANNUAL)$")
+    premium_basis: str = Field("PER_PERSON", pattern="^(PER_PERSON|PER_HOUSEHOLD)$")
+    deductible: float = Field(0, ge=0)
+    oop_max: float = Field(0, ge=0)
+    eligibility_min_age: float = Field(0, ge=0, le=120)
+    eligibility_max_age: float | None = Field(None, ge=0, le=120)
+    requires_medicare_parts: str = Field("", pattern="^(A|B|A,B)?$")
+    requires_part_b_premium: bool = False
+    includes_drugs: bool = False
+    drug_option_id: int | None = None
+    owner: str = Field("BOTH", pattern="^(SELF|SPOUSE|BOTH)$")
+    cost_sharing_note: str = Field("", max_length=2000)
+    source_note: str = Field("", max_length=2000)
+    verified: bool = False
+    active: bool = True
+    sort_order: int = 0
+
+    @field_validator("premium_by_year")
+    @classmethod
+    def _prices(cls, v: dict[str, float]) -> dict[str, float]:
+        for k, x in v.items():
+            if not k.isdigit() or not 2000 <= int(k) <= 2100:
+                raise ValueError(f"year key {k!r} must be a four-digit year")
+            if x < 0:
+                raise ValueError("premiums must be >= 0")
+        return v
+
+    @model_validator(mode="after")
+    def _ages(self):
+        if self.eligibility_max_age is not None and self.eligibility_max_age <= self.eligibility_min_age:
+            raise ValueError("eligibility_max_age must exceed eligibility_min_age")
+        return self
+
+
+class CoverageChoiceIn(BaseModel):
+    """Which option each person uses instead of ACA / flat Medicare; null clears the choice."""
+
+    SELF: int | None = None
+    SPOUSE: int | None = None
 
 
 class ConfirmedRow(BaseModel):

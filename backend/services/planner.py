@@ -5,9 +5,10 @@ from datetime import date
 from types import SimpleNamespace
 
 import db
-from models import Account, AssumptionOverride, Liability, Pension, PlannedEvent, RunSnapshot
+from models import Account, AssumptionOverride, CoverageOption, Liability, Pension, PlannedEvent, RunSnapshot
 from services import aca, cash_optimizer, household, income_streams, ingestion, state_rules
 from services import assumptions as assumptions_svc
+from services import coverage as coverage_svc
 from services import healthcare as healthcare_svc
 from services import liabilities as liab_svc
 from services import pension as pension_svc
@@ -146,6 +147,7 @@ def build_inputs(profile, accts, debts, events, retire_age: float, rule_of_55=Fa
         taxable_now=taxable,
         real_return_taxable=(1 + mu_t) / (1 + qe.INFLATION) - 1,
         gain_ratio=_gain_ratio(accts),
+        coverage_options=db.session().query(CoverageOption).all(),
     )
     pretax_other = _rule55_locked(accts) if rule_of_55 else 0.0
     pretax -= pretax_other
@@ -577,6 +579,18 @@ def spending_plan(profile, nominal: bool = False, base_annual: float | None = No
     return out
 
 
+def coverage_comparison(profile, year: int, magi: float) -> list[dict]:
+    """Per person: ACA net premium (pre-65) next to each eligible custom option's annual cost, today's dollars."""
+    opts = db.session().query(CoverageOption).order_by(CoverageOption.sort_order, CoverageOption.id).all()
+    ppl = household.people(profile)
+    ages = {p.key: p.age_now for p in ppl}
+    aca_net = {}
+    for k, a in ages.items():
+        if a < household.MEDICARE_AGE:
+            aca_net[k] = healthcare_svc.pre65_table([int(a)], magi, len(ppl))[0]["net"]
+    return coverage_svc.compare(opts, {o.id: o for o in opts if o.category == "DRUG"}, ages, year, aca_net)
+
+
 def healthcare_plan(profile, p: dict | None = None) -> dict:
     """Medicare (Part B/D, IRMAA, Medigap), pre-65 ACA premiums by age, HSA run-out and LTC expected/stress cost."""
     p = p or {}
@@ -593,6 +607,7 @@ def healthcare_plan(profile, p: dict | None = None) -> dict:
         hsa_bal, people > 1, profile.current_age, profile.target_retirement_age, 95, year, medical_spend=float(p.get("hsa_medical_spend") or 0.0)
     )
     out["magi_basis"] = "current-year estimate you pass in; real IRMAA uses MAGI from two years earlier"
+    out["coverage_options"] = coverage_comparison(profile, year, magi)
     return out
 
 
