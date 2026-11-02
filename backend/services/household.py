@@ -15,6 +15,7 @@ from services import coverage as coverage_svc
 from services import liabilities as liab_svc
 from services import social_security as ss_svc
 from services import spending as spending_svc
+from services import spending_goals as goals_svc
 from services import tax as tax_svc
 
 MEDICARE_AGE = 65
@@ -127,6 +128,7 @@ def build_flows(
     gain_ratio: float = 0.3,
     today: date | None = None,
     coverage_options: list | None = None,
+    spending_goals: list | None = None,
 ) -> Flows:
     """Year-by-year household cash flows for one candidate retirement age."""
     today = today or date.today()
@@ -239,6 +241,8 @@ def build_flows(
     if not spending_svc.is_default(smodel):
         for y in range(retire_y, years):
             spend_adj[y] = base_spend * (spending_svc.multiplier(smodel, me.age_in(y), y) - 1.0)
+    goal_extra = goals_svc.yearly_extra(spending_goals or [], {p.key: p.age_now for p in ppl}, retire_y, years, smodel)
+    spend_adj = spend_adj + goal_extra  # goals are extra to the base budget, today's $, grossed up for tax like the rest of spending
     prev_premium = 0.0
     cov_choice = getattr(profile, "coverage_choice", None) or {}
     cov_opts = {o.id: o for o in (coverage_options or [])}
@@ -365,7 +369,8 @@ def build_flows(
         health=health,
         breakdown={
             "health": health_v,
-            "spending_adjustment": spend_adj,
+            "spending_adjustment": spend_adj - goal_extra,
+            "spending_goals": goal_extra,
             "purchases": purchases,
             "home_upkeep": upkeep,
             "escrow": escrow_v,

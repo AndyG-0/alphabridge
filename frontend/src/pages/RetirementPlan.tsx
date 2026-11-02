@@ -8,6 +8,7 @@ import RmdCard from './RmdCard'
 import SavingsCard from './SavingsCard'
 import SocialSecurityCard from './SocialSecurityCard'
 import CoverageOptionsCard from './CoverageOptionsCard'
+import SpendingGoalsCard from './SpendingGoalsCard'
 import HealthcareCard from './HealthcareCard'
 import RealEstateCard from './RealEstateCard'
 import ScenarioCard from './ScenarioCard'
@@ -86,6 +87,7 @@ export default function RetirementPlan() {
           <StrategiesCard />
           <StressCard />
           <SpendingCard />
+          <SpendingGoalsCard />
           <HealthcareCard />
           <CoverageOptionsCard />
           <RealEstateCard />

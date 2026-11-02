@@ -5,7 +5,7 @@ from datetime import date
 from types import SimpleNamespace
 
 import db
-from models import Account, AssumptionOverride, CoverageOption, Liability, Pension, PlannedEvent, RunSnapshot
+from models import Account, AssumptionOverride, CoverageOption, Liability, Pension, PlannedEvent, RunSnapshot, SpendingGoal
 from services import aca, cash_optimizer, household, income_streams, ingestion, state_rules
 from services import assumptions as assumptions_svc
 from services import coverage as coverage_svc
@@ -130,7 +130,7 @@ def stored_overrides() -> dict[str, float]:
     return {o.key: o.value for o in db.session().query(AssumptionOverride).all()}
 
 
-def build_inputs(profile, accts, debts, events, retire_age: float, rule_of_55=False, guardrails=None):
+def build_inputs(profile, accts, debts, events, retire_age: float, rule_of_55=False, guardrails=None, goals=None):
     """FireInputs + household flows for one candidate retirement age."""
     assumptions_svc.apply(stored_overrides())
     taxable, pretax, pretax_sp, tax_w, pre_w = _pools(accts)
@@ -148,6 +148,7 @@ def build_inputs(profile, accts, debts, events, retire_age: float, rule_of_55=Fa
         real_return_taxable=(1 + mu_t) / (1 + qe.INFLATION) - 1,
         gain_ratio=_gain_ratio(accts),
         coverage_options=db.session().query(CoverageOption).all(),
+        spending_goals=db.session().query(SpendingGoal).all() if goals is None else goals,
     )
     pretax_other = _rule55_locked(accts) if rule_of_55 else 0.0
     pretax -= pretax_other
@@ -249,7 +250,7 @@ def _phases(profile, inp: qe.FireInputs, fl, spend: float) -> list[dict]:
     return out
 
 
-def run_fire(profile, n_sims=5000, rule_of_55=False, seed=42, events=None, guardrails=None, detail=True, shock=0.0) -> dict:
+def run_fire(profile, n_sims=5000, rule_of_55=False, seed=42, events=None, guardrails=None, detail=True, shock=0.0, goals=None) -> dict:
     s = db.session()
     accts = s.query(Account).all()
     rule_of_55 = rule_of_55 or any(
@@ -267,9 +268,9 @@ def run_fire(profile, n_sims=5000, rule_of_55=False, seed=42, events=None, guard
     retire = profile.target_retirement_age
 
     def rebuild(age):
-        return build_inputs(profile, accts, debts, events_for(age), age, rule_of_55, guardrails)[0]
+        return build_inputs(profile, accts, debts, events_for(age), age, rule_of_55, guardrails, goals)[0]
 
-    inp, fl = build_inputs(profile, accts, debts, events, retire, rule_of_55, guardrails)
+    inp, fl = build_inputs(profile, accts, debts, events, retire, rule_of_55, guardrails, goals)
     inp.first_year_shock = shock
     sim = qe.simulate_fire(inp, n_sims=n_sims, seed=seed)
     y0 = max(math.ceil(retire - profile.current_age), 0)
@@ -859,3 +860,21 @@ def plan_health(profile, *, save: bool = False, n_sims: int = 1000) -> dict:
         s.add(RunSnapshot(metrics=cur["metrics"], assumptions=cur["assumptions"]))
         s.commit()
     return out
+
+
+def spending_goals_impact(profile, n_sims: int = 2000, seed: int = 42) -> dict:
+    """Plan outcome with the enabled spending goals versus without them, on the same seeded return paths."""
+    goals = db.session().query(SpendingGoal).filter_by(enabled=True).all()
+    if not goals:
+        return {"has_goals": False}
+    without = run_fire(profile, n_sims=n_sims, seed=seed, detail=False, goals=[])
+    with_ = run_fire(profile, n_sims=n_sims, seed=seed, detail=False, goals=goals)
+    return {
+        "has_goals": True,
+        "success_rate_without": without["success_rate"],
+        "success_rate_with": with_["success_rate"],
+        "success_rate_change": with_["success_rate"] - without["success_rate"],
+        "median_final_real_without": without.get("median_final_real"),
+        "median_final_real_with": with_.get("median_final_real"),
+        "target_success_rate": with_["target_success_rate"],
+    }

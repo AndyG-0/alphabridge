@@ -271,3 +271,27 @@ class ScenarioIn(BaseModel):
         if bad:
             raise ValueError(f"unsupported override fields: {bad}")
         return v
+
+
+class SpendingGoalIn(BaseModel):
+    """A recurring retirement cost on top of the base budget; amount is today's dollars a year."""
+
+    name: str = Field(min_length=1, max_length=120)
+    category: str = Field("other", min_length=1, max_length=40)
+    annual_amount: float = Field(ge=0, le=10_000_000)
+    start_basis: str = Field("YEARS_AFTER_RETIREMENT", pattern="^(AGE|YEARS_AFTER_RETIREMENT)$")
+    start_value: float = Field(0, ge=0, le=120)
+    end_basis: str = Field("YEARS_AFTER_RETIREMENT", pattern="^(AGE|YEARS_AFTER_RETIREMENT)$")
+    end_value: float | None = Field(None, ge=0, le=120)
+    owner: str = Field("SELF", pattern="^(SELF|SPOUSE|JOINT)$")
+    real_inflation: float = Field(0.0, ge=-0.15, le=0.15)
+    smile_applies: bool = True
+    enabled: bool = True
+    note: str = Field("", max_length=2000)
+    sort_order: int = 0
+
+    @model_validator(mode="after")
+    def _window(self):
+        if self.end_value is not None and self.end_basis == self.start_basis and self.end_value <= self.start_value:
+            raise ValueError("end must be after start")
+        return self

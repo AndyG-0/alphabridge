@@ -344,6 +344,31 @@ class CoverageOption(Base):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 
+class SpendingGoal(Base):
+    """A recurring retirement cost on top of the base budget (travel, hobbies, family, home projects). Amounts are today's dollars a year;
+    the window is in the owner's age or in years after the primary's retirement. Feeds services/spending_goals.py."""
+
+    __tablename__ = "spending_goal"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user_profile.id"), default=current_user_id)
+    name: Mapped[str] = mapped_column(String(120))
+    category: Mapped[str] = mapped_column(String(40), default="other")  # preset key (travel, hobbies, family, home) or free text
+    annual_amount: Mapped[float] = mapped_column(Float, default=0)
+    start_basis: Mapped[str] = mapped_column(String(24), default="YEARS_AFTER_RETIREMENT")  # AGE | YEARS_AFTER_RETIREMENT
+    start_value: Mapped[float] = mapped_column(Float, default=0)
+    end_basis: Mapped[str] = mapped_column(String(24), default="YEARS_AFTER_RETIREMENT")
+    end_value: Mapped[float | None] = mapped_column(Float, nullable=True)  # None = through the end of the plan
+    owner: Mapped[str] = mapped_column(String(10), default="SELF")  # SELF | SPOUSE | JOINT (JOINT follows the primary)
+    real_inflation: Mapped[float] = mapped_column(Float, default=0.0)  # per year above general inflation
+    smile_applies: Mapped[bool] = mapped_column(Boolean, default=True)  # scale by the go-go/slow-go/no-go multiplier
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    note: Mapped[str] = mapped_column(Text, default="")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    def to_dict(self) -> dict:
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+
 class ChatSession(Base):
     """A saved Ask-AI conversation. The server owns history so sessions can be resumed from any device."""
 
@@ -516,7 +541,7 @@ class ActionItem(Base):
 
 
 # Tenant scoping (see db._scope_to_user). A test fails when a table is in none of these groups, so new models must be classified.
-USER_SCOPED = (Account, Scenario, Liability, PlannedEvent, Pension, ChatSession, ActionItem, CoverageOption)
+USER_SCOPED = (Account, Scenario, Liability, PlannedEvent, Pension, ChatSession, ActionItem, CoverageOption, SpendingGoal)
 ACCOUNT_CHILDREN = (Holding, TaxLot, AllowedPlanMenu)
 SHARED_TABLES = {
     "user_profile",  # the tenants themselves: reached through routes._helpers.get_profile()

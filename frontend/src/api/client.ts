@@ -644,6 +644,44 @@ export interface CoverageOptionInput {
 export interface CoverageOption extends CoverageOptionInput {
   id: number
 }
+export type GoalBasis = 'AGE' | 'YEARS_AFTER_RETIREMENT'
+export interface SpendingGoalInput {
+  name: string
+  category: string
+  annual_amount: number
+  start_basis: GoalBasis
+  start_value: number
+  end_basis: GoalBasis
+  end_value: number | null
+  owner: 'SELF' | 'SPOUSE' | 'JOINT'
+  real_inflation: number
+  smile_applies: boolean
+  enabled: boolean
+  note: string
+  sort_order: number
+}
+export interface SpendingGoal extends SpendingGoalInput {
+  id: number
+}
+export interface SpendingGoals {
+  goals: SpendingGoal[]
+  costs: { id: number; name: string; enabled: boolean; lifetime_real: number; lifetime_nominal: number; first_age: number | null; last_age: number | null }[]
+  lifetime_real: number
+  lifetime_nominal: number
+}
+export interface SpendingGoalPresets {
+  presets: Record<string, Omit<SpendingGoalInput, 'owner' | 'real_inflation' | 'enabled' | 'note' | 'sort_order'>>
+  verified: boolean
+  notes: string
+}
+export interface SpendingGoalsImpact {
+  has_goals: boolean
+  success_rate_with?: number
+  success_rate_without?: number
+  success_rate_change?: number
+  target_success_rate?: number
+}
+
 export interface CoverageOptions {
   options: CoverageOption[]
   choice: Partial<Record<'SELF' | 'SPOUSE', number>>
@@ -1004,6 +1042,12 @@ export const api = {
   addCoverageOption: (o: CoverageOptionInput) => req<CoverageOption>('/coverage-options', json('POST', o)),
   saveCoverageOption: (id: number, o: CoverageOptionInput) => req<CoverageOption>(`/coverage-options/${id}`, json('PUT', o)),
   deleteCoverageOption: (id: number) => req<null>(`/coverage-options/${id}`, json('DELETE')),
+  spendingGoals: () => req<SpendingGoals>('/spending-goals'),
+  spendingGoalPresets: () => req<SpendingGoalPresets>('/spending-goals/presets'),
+  spendingGoalsImpact: () => req<SpendingGoalsImpact>('/spending-goals/impact'),
+  addSpendingGoal: (g: SpendingGoalInput) => req<SpendingGoal>('/spending-goals', json('POST', g)),
+  saveSpendingGoal: (id: number, g: SpendingGoalInput) => req<SpendingGoal>(`/spending-goals/${id}`, json('PUT', g)),
+  deleteSpendingGoal: (id: number) => req<null>(`/spending-goals/${id}`, json('DELETE')),
   setCoverageChoice: (c: { SELF?: number | null; SPOUSE?: number | null }) => req<{ choice: CoverageOptions['choice'] }>('/coverage-choice', json('PUT', c)),
   schedulerStatus: () => req<SchedulerStatus>('/scheduler/status'),
   liabilities: () => req<Liability[]>('/liabilities'),

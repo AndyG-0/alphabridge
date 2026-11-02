@@ -120,6 +120,12 @@ TOOLS = [
         "eligibility ages and which option each person has chosen for the plan.",
         _obj({}),
     ),
+    (
+        "get_spending_goals",
+        "Recurring retirement costs on top of the base budget (travel, hobbies, family and gifts, home projects) with each goal's window, "
+        "lifetime cost, and the plan's success rate with versus without them.",
+        _obj({}),
+    ),
     ("get_pensions", "Employer cash-balance pensions with projected balance and monthly annuity at the start age.", _obj({})),
     (
         "get_withdrawal_plan",
@@ -596,6 +602,12 @@ def _coverage_options() -> dict:
     return {"options": [o.to_dict() for o in opts], "choice": get_profile().coverage_choice or {}}
 
 
+def _spending_goals() -> dict:
+    from routes.spending_goals_routes import goals_summary
+
+    return {**goals_summary(), "impact": planner.spending_goals_impact(get_profile(), n_sims=1000)}
+
+
 def _pensions() -> list[dict]:
     profile = get_profile()
     out = []
@@ -892,6 +904,7 @@ HANDLERS = {
     "get_liabilities": lambda a: _liabilities(),
     "get_pensions": lambda a: _pensions(),
     "get_coverage_options": lambda a: _coverage_options(),
+    "get_spending_goals": lambda a: _spending_goals(),
     "get_early_access": lambda a: _early_access(),
     "get_social_security_plan": _social_security,
     "get_savings_plan": _savings,
