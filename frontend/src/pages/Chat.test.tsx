@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
@@ -55,6 +55,30 @@ describe('Chat sessions', () => {
     await user.type(screen.getByPlaceholderText('Ask about your plan…'), 'hello{Enter}')
     expect(await screen.findByText('hi there')).toBeInTheDocument()
     expect(screen.getByTestId('where')).toHaveTextContent('/chat/5')
+  })
+
+  it('renders assistant markdown but keeps user text plain', async () => {
+    server.use(
+      http.get('*/api/chat/sessions', () => HttpResponse.json([s1])),
+      http.get('*/api/chat/sessions/1', () =>
+        HttpResponse.json({
+          ...s1,
+          messages: [
+            { id: 1, role: 'user', content: 'use **stars**', tools: [] },
+            { id: 2, role: 'assistant', content: '**Yes** - see:\n\n- one\n- two', tools: [] },
+          ],
+        }),
+      ),
+    )
+    renderAt('/chat/1')
+    const bold = await screen.findByText('Yes', { selector: 'strong' })
+    const reply = bold.closest('div')!
+    expect(
+      within(reply)
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual(['one', 'two'])
+    expect(screen.getByText('use **stars**')).toBeInTheDocument()
   })
 
   it('renames and deletes a session', async () => {

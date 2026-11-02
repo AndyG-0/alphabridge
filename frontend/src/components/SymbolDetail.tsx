@@ -1,3 +1,4 @@
+import { Markdown } from './Markdown'
 import type { ReactNode } from 'react'
 import { Line, LineChart, ResponsiveContainer, Tooltip, YAxis } from 'recharts'
 import { api, type SymbolDetail as Detail } from '../api/client'
@@ -211,11 +212,11 @@ export default function SymbolDetail({ symbol, onClose }: { symbol: string; onCl
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <h4 className="font-medium text-emerald-400">Bull case</h4>
-              <p className="whitespace-pre-wrap text-slate-300">{d.report.bull_case_md}</p>
+              <Markdown className="text-slate-300">{d.report.bull_case_md}</Markdown>
             </div>
             <div>
               <h4 className="font-medium text-red-400">Bear case</h4>
-              <p className="whitespace-pre-wrap text-slate-300">{d.report.bear_case_md}</p>
+              <Markdown className="text-slate-300">{d.report.bear_case_md}</Markdown>
             </div>
           </div>
           {d.report.red_flags.length > 0 && (
